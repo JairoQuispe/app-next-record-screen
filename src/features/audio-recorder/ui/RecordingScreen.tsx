@@ -4,6 +4,51 @@ import { formatDuration } from "@shared/lib/utils";
 import { isTauriRuntime } from "@shared/lib/runtime/isTauriRuntime";
 import type { AudioRecorderState, AudioRecorderActions } from "../model/types";
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function buildSmoothPath(points: Array<{ x: number; y: number }>): string {
+  if (points.length === 0) return "";
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+
+  let d = `M ${points[0].x} ${points[0].y}`;
+
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const p0 = points[Math.max(0, i - 1)];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[Math.min(points.length - 1, i + 2)];
+
+    const tension = 0.22;
+    const cp1x = p1.x + (p2.x - p0.x) * tension;
+    const cp1y = p1.y + (p2.y - p0.y) * tension;
+    const cp2x = p2.x - (p3.x - p1.x) * tension;
+    const cp2y = p2.y - (p3.y - p1.y) * tension;
+
+    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+  }
+
+  return d;
+}
+
+function levelsToWavePoints(
+  levels: number[],
+  width: number,
+  baselineY: number,
+  amplitude: number,
+  direction: 1 | -1,
+): Array<{ x: number; y: number }> {
+  if (levels.length === 0) return [];
+
+  const step = width / Math.max(1, levels.length - 1);
+  return levels.map((level, index) => {
+    const x = index * step;
+    const y = baselineY + direction * clamp(level, 0, 1) * amplitude;
+    return { x, y };
+  });
+}
+
 interface RecordingScreenProps {
   state: Pick<
     AudioRecorderState,
@@ -65,19 +110,46 @@ export function RecordingScreen({ state, actions, animateIn, onBackToSetup }: Re
                 <div className="neo-audio-state">
                   <p className="neo-audio-state-title" aria-live="polite">{status.toUpperCase()}</p>
                   <p className="neo-audio-state-time" aria-live="polite" aria-atomic="true">{formatDuration(durationSeconds)}</p>
-                  <div className="neo-spectrum" aria-hidden="true">
-                    {spectrumLevels.map((level, index) => (
-                      <span
-                        key={index}
-                        className="neo-spectrum-bar"
-                        style={{
-                          height: `${10 + level * 90}%`,
-                          opacity: 0.35 + level * 0.65,
-                          transform: `scaleY(${0.55 + level * 0.9})`,
-                          filter: `brightness(${0.8 + level * 0.9}) saturate(${1 + level * 0.8})`,
-                        }}
-                      />
-                    ))}
+                  <div className="neo-waveform" aria-hidden="true">
+                    <svg
+                      className="neo-waveform-svg"
+                      viewBox="0 0 1000 240"
+                      preserveAspectRatio="none"
+                      role="presentation"
+                      focusable="false"
+                    >
+                      {(() => {
+                        const width = 1000;
+                        const height = 240;
+                        const mid = height / 2;
+                        const amplitude = height * 0.38;
+
+                        const topPoints = levelsToWavePoints(
+                          spectrumLevels,
+                          width,
+                          mid - 8,
+                          amplitude,
+                          -1,
+                        );
+                        const bottomPoints = levelsToWavePoints(
+                          spectrumLevels,
+                          width,
+                          mid + 8,
+                          amplitude,
+                          1,
+                        );
+
+                        const topPath = buildSmoothPath(topPoints);
+                        const bottomPath = buildSmoothPath(bottomPoints);
+
+                        return (
+                          <>
+                            <path className="neo-waveform-path neo-waveform-path--top" d={topPath} />
+                            <path className="neo-waveform-path neo-waveform-path--bottom" d={bottomPath} />
+                          </>
+                        );
+                      })()}
+                    </svg>
                   </div>
                 </div>
               </div>
