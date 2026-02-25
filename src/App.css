@@ -24,6 +24,35 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Desktop (Tauri) scrollbar */
+:root[data-tauri="true"] {
+  scrollbar-color: #f1f0f2 #2a2633;
+  scrollbar-width: thin;
+}
+
+:root[data-tauri="true"] ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+:root[data-tauri="true"] ::-webkit-scrollbar-track {
+  background: #2a2633;
+  border-left: 2px solid var(--neo-black);
+}
+
+:root[data-tauri="true"] ::-webkit-scrollbar-thumb {
+  background: #f1f0f2;
+  border: 2px solid #2a2633;
+}
+
+:root[data-tauri="true"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--electric-yellow);
+}
+
+:root[data-tauri="true"] ::-webkit-scrollbar-corner {
+  background: #2a2633;
+}
+
 .neo-app-container {
   position: relative;
   min-height: 100vh;
@@ -72,6 +101,40 @@ body {
 .neo-back-icon {
   font-size: 1.2rem;
   font-weight: bold;
+}
+
+:root[data-tauri="true"] .neo-app-container {
+  padding-top: var(--neo-titlebar-height, 0px);
+}
+
+.neo-titlebar-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0 12px;
+  height: var(--neo-titlebar-height);
+  border: none;
+  background: var(--dark-slate);
+  color: var(--neo-fg);
+  font-weight: 800;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.neo-titlebar-back:hover,
+.neo-titlebar-back:focus-visible {
+  background: #e8d2a3;
+  color: var(--neo-black);
+  outline: none;
+}
+
+.neo-titlebar-back:active {
+  transform: none;
+  box-shadow: none;
 }
 
 /* Placeholder for upcoming features */

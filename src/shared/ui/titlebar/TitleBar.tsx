@@ -1,5 +1,4 @@
-import { useCallback, useMemo, type CSSProperties } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { useCallback, useMemo, type CSSProperties, type ReactNode } from "react";
 import { isTauriRuntime } from "@shared/lib/runtime";
 import "./TitleBar.css";
 
@@ -7,18 +6,41 @@ function getAppWindow() {
   if (!isTauriRuntime()) return null;
 
   try {
+    const { getCurrentWindow } = require("@tauri-apps/api/window") as typeof import("@tauri-apps/api/window");
     return getCurrentWindow();
   } catch {
     return null;
   }
 }
 
+const minimizeIcon = (
+  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+    <path fill="currentColor" d="M19 13H5v-2h14z" />
+  </svg>
+);
+
+const maximizeIcon = (
+  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+    <path fill="currentColor" d="M4 4h16v16H4zm2 4v10h12V8z" />
+  </svg>
+);
+
+const closeIcon = (
+  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+    <path
+      fill="currentColor"
+      d="M13.46 12L19 17.54V19h-1.46L12 13.46L6.46 19H5v-1.46L10.54 12L5 6.46V5h1.46L12 10.54L17.54 5H19v1.46z"
+    />
+  </svg>
+);
+
 interface TitleBarProps {
   title?: string;
   backgroundColor?: string;
+  leftAction?: ReactNode;
 }
 
-export function TitleBar({ title, backgroundColor }: TitleBarProps) {
+export function TitleBar({ title, backgroundColor, leftAction }: TitleBarProps) {
   const appWindow = useMemo(() => getAppWindow(), []);
   const style = useMemo<CSSProperties | undefined>(
     () => (backgroundColor ? ({ "--neo-titlebar-bg": backgroundColor } as CSSProperties) : undefined),
@@ -46,9 +68,14 @@ export function TitleBar({ title, backgroundColor }: TitleBarProps) {
         data-tauri-drag-region
         onDoubleClick={handleToggleMaximize}
       >
-        <span className="neo-titlebar-appname" data-tauri-drag-region>
-          {title ?? "RECOGNI"}
-        </span>
+        <div className="neo-titlebar-left" data-tauri-drag-region>
+          {leftAction ? (
+            <div className="neo-titlebar-left-action">{leftAction}</div>
+          ) : null}
+          <span className="neo-titlebar-appname" data-tauri-drag-region>
+            {title ?? "RECOGNI"}
+          </span>
+        </div>
       </div>
 
       <div className="neo-titlebar-controls">
@@ -59,9 +86,7 @@ export function TitleBar({ title, backgroundColor }: TitleBarProps) {
           aria-label="Minimizar"
           title="Minimizar"
         >
-          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-            <path fill="currentColor" d="M19 13H5v-2h14z" />
-          </svg>
+          {minimizeIcon}
         </button>
 
         <button
@@ -71,9 +96,7 @@ export function TitleBar({ title, backgroundColor }: TitleBarProps) {
           aria-label="Maximizar"
           title="Maximizar"
         >
-          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-            <path fill="currentColor" d="M4 4h16v16H4zm2 4v10h12V8z" />
-          </svg>
+          {maximizeIcon}
         </button>
 
         <button
@@ -83,12 +106,7 @@ export function TitleBar({ title, backgroundColor }: TitleBarProps) {
           aria-label="Cerrar"
           title="Cerrar"
         >
-          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-            <path
-              fill="currentColor"
-              d="M13.46 12L19 17.54V19h-1.46L12 13.46L6.46 19H5v-1.46L10.54 12L5 6.46V5h1.46L12 10.54L17.54 5H19v1.46z"
-            />
-          </svg>
+          {closeIcon}
         </button>
       </div>
     </div>

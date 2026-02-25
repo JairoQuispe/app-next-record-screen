@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   AudioInputSource,
   AudioRecorderActions,
@@ -14,15 +14,15 @@ import {
   isNativeSystemAudioAvailable,
   convertFilePathToUrl,
 } from "@shared/lib/runtime/tauriAudioCapture";
-import { SPECTRUM_BAR_COUNT } from "../lib/constants";
+import { SPECTRUM_BAR_COUNT, SPECTRUM_ZERO_LEVELS, CANDIDATE_MIME_TYPES } from "../lib/constants";
 
-const CANDIDATE_MIME_TYPES = [
-  "audio/webm;codecs=opus",
-  "audio/webm",
-  "audio/mp4",
-  "audio/ogg;codecs=opus",
-  "audio/ogg",
-];
+const IS_BROWSER =
+  typeof window !== "undefined" &&
+  typeof navigator !== "undefined" &&
+  typeof MediaRecorder !== "undefined";
+
+const IS_MEDIA_SUPPORTED =
+  IS_BROWSER && !!navigator.mediaDevices?.getUserMedia;
 
 function getSupportedMimeType(): string | undefined {
   if (typeof window === "undefined" || typeof MediaRecorder === "undefined") {
@@ -83,8 +83,8 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
   const [availableMicrophones, setAvailableMicrophones] = useState<MicrophoneDeviceOption[]>([]);
   const [selectedMicrophoneId, setSelectedMicrophoneId] = useState<string | null>(null);
   const [audioInputSource, setAudioInputSourceState] = useState<AudioInputSource>("microphone");
-  const [spectrumLevels, setSpectrumLevels] = useState<number[]>(() =>
-    Array.from({ length: SPECTRUM_BAR_COUNT }, () => 0),
+  const [spectrumLevels, setSpectrumLevels] = useState<number[]>(
+    () => SPECTRUM_ZERO_LEVELS,
   );
 
   const streamRef = useRef<MediaStream | null>(null);
@@ -107,23 +107,11 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
   const nativeCaptureActiveRef = useRef(false);
   const fakeSpectrumTimerRef = useRef<number | null>(null);
 
-  const isSupported = useMemo(() => {
-    return (
-      typeof window !== "undefined" &&
-      typeof navigator !== "undefined" &&
-      !!navigator.mediaDevices?.getUserMedia &&
-      typeof MediaRecorder !== "undefined"
-    );
-  }, []);
+  const isSupported = IS_MEDIA_SUPPORTED;
 
   const [isSystemAudioSupported, setIsSystemAudioSupported] = useState(() => {
     if (isTauriRuntime()) return true;
-    return (
-      typeof window !== "undefined" &&
-      typeof navigator !== "undefined" &&
-      !!navigator.mediaDevices?.getDisplayMedia &&
-      typeof MediaRecorder !== "undefined"
-    );
+    return IS_BROWSER && !!navigator.mediaDevices?.getDisplayMedia;
   });
 
   useEffect(() => {
@@ -165,7 +153,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       spectrumAudioContextRef.current = null;
     }
 
-    setSpectrumLevels(Array.from({ length: SPECTRUM_BAR_COUNT }, () => 0));
+    setSpectrumLevels(SPECTRUM_ZERO_LEVELS);
   }, []);
 
   const startSpectrumMonitor = useCallback(
@@ -179,11 +167,14 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       const audioContext = new window.AudioContext();
       const analyser = audioContext.createAnalyser();
       const source = audioContext.createMediaStreamSource(stream);
-      const frequencyData = new Uint8Array(analyser.frequencyBinCount);
 
       analyser.fftSize = 256;
       analyser.smoothingTimeConstant = 0.8;
       source.connect(analyser);
+
+      const frequencyData = new Uint8Array(analyser.frequencyBinCount);
+      const dataLength = frequencyData.length;
+      const bucketSize = Math.floor(dataLength / SPECTRUM_BAR_COUNT);
 
       spectrumAudioContextRef.current = audioContext;
       analyserRef.current = analyser;
@@ -191,20 +182,18 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
 
       spectrumTimerRef.current = window.setInterval(() => {
         analyser.getByteFrequencyData(frequencyData);
-        const bucketSize = Math.floor(frequencyData.length / SPECTRUM_BAR_COUNT);
-        const nextLevels: number[] = [];
+        const nextLevels: number[] = new Array(SPECTRUM_BAR_COUNT);
 
         for (let bucketIndex = 0; bucketIndex < SPECTRUM_BAR_COUNT; bucketIndex += 1) {
           const start = bucketIndex * bucketSize;
-          const end = bucketIndex === SPECTRUM_BAR_COUNT - 1 ? frequencyData.length : start + bucketSize;
+          const end = bucketIndex === SPECTRUM_BAR_COUNT - 1 ? dataLength : start + bucketSize;
           let sum = 0;
 
           for (let i = start; i < end; i += 1) {
             sum += frequencyData[i];
           }
 
-          const avg = end > start ? sum / (end - start) : 0;
-          nextLevels.push(avg / 255);
+          nextLevels[bucketIndex] = end > start ? sum / ((end - start) * 255) : 0;
         }
 
         setSpectrumLevels(nextLevels);
@@ -377,7 +366,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       window.clearInterval(fakeSpectrumTimerRef.current);
       fakeSpectrumTimerRef.current = null;
     }
-    setSpectrumLevels(Array.from({ length: SPECTRUM_BAR_COUNT }, () => 0));
+    setSpectrumLevels(SPECTRUM_ZERO_LEVELS);
   }, []);
 
   const stopRecording = useCallback(async () => {

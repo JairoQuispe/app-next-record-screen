@@ -46,7 +46,7 @@ function App() {
     if (isTauriRuntime()) {
       setTitleBarState({
         title: "GRABAR AUDIO",
-        backgroundColor: "var(--hot-pink)",
+        backgroundColor: "#19c4ae",
       });
     }
     setViewTransition("audio-setup");
@@ -63,14 +63,32 @@ function App() {
     navigateTo("screen");
   }, [navigateTo]);
 
+  const handleBackToSelection = useCallback(() => {
+    navigateTo("selection");
+  }, [navigateTo]);
+
+  const backButton = (
+    <button className="neo-titlebar-back" onClick={handleBackToSelection}>
+      <span className="neo-back-icon">←</span> VOLVER
+    </button>
+  );
+
+  const isTauri = isTauriRuntime();
+
   if (mode === "audio") {
     return (
       <>
-        <TitleBar title={titleBarState.title} backgroundColor={titleBarState.backgroundColor} />
+        <TitleBar
+          title={titleBarState.title}
+          backgroundColor={titleBarState.backgroundColor}
+          leftAction={backButton}
+        />
         <div className="neo-app-container">
-          <button className="neo-back-button" onClick={() => navigateTo("selection")}>
-            <span className="neo-back-icon">←</span> VOLVER
-          </button>
+          {!isTauri && (
+            <button className="neo-back-button" onClick={handleBackToSelection}>
+              <span className="neo-back-icon">←</span> VOLVER
+            </button>
+          )}
           <AudioRecorderPage />
         </div>
       </>
@@ -80,11 +98,17 @@ function App() {
   if (mode === "screen") {
     return (
       <>
-        <TitleBar title={titleBarState.title} backgroundColor={titleBarState.backgroundColor} />
+        <TitleBar
+          title={titleBarState.title}
+          backgroundColor={titleBarState.backgroundColor}
+          leftAction={backButton}
+        />
         <div className="neo-app-container">
-          <button className="neo-back-button" onClick={() => navigateTo("selection")}>
-            <span className="neo-back-icon">←</span> VOLVER
-          </button>
+          {!isTauri && (
+            <button className="neo-back-button" onClick={handleBackToSelection}>
+              <span className="neo-back-icon">←</span> VOLVER
+            </button>
+          )}
           <div className="neo-temp-placeholder">
             <div className="neo-badge">PRÓXIMAMENTE</div>
             <h2>GRABACIÓN DE PANTALLA</h2>

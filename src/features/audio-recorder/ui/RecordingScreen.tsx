@@ -4,6 +4,13 @@ import { formatDuration } from "@shared/lib/utils";
 import { isTauriRuntime } from "@shared/lib/runtime/isTauriRuntime";
 import type { AudioRecorderState, AudioRecorderActions } from "../model/types";
 
+const recordingFooter = (
+  <footer className="neo-footer neo-footer--inside">
+    <span>mode: audio_capture // runtime: cross-platform</span>
+    <span>cross-platform: web + windows + macos + linux + android + ios</span>
+  </footer>
+);
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -102,7 +109,7 @@ export function RecordingScreen({ state, actions, animateIn, onBackToSetup }: Re
 
   const { startRecording, stopRecording, pauseRecording, resumeRecording, saveRecording } = actions;
 
-  const runtime = useMemo(() => (isTauriRuntime() ? "desktop/mobile (Tauri)" : "browser"), []);
+  const isTauri = isTauriRuntime();
 
   const usesMicrophone = audioInputSource === "microphone" || audioInputSource === "mixed";
   const canStart = status !== "recording" && status !== "paused";
@@ -205,11 +212,11 @@ export function RecordingScreen({ state, actions, animateIn, onBackToSetup }: Re
         </div>
 
         <section className="neo-output" aria-live="polite">
-          {audioUrl && (
+          {audioUrl ? (
             <div className="neo-playback-card neo-animate-slide-up">
               <p className="neo-playback-title">GRABACIÓN LISTA</p>
               <audio controls src={audioUrl} className="neo-audio-player" />
-              {isTauriRuntime() ? (
+              {isTauri ? (
                 <button
                   type="button"
                   className="neo-download-link"
@@ -223,14 +230,12 @@ export function RecordingScreen({ state, actions, animateIn, onBackToSetup }: Re
                 </a>
               )}
             </div>
+          ) : (
+            <p className="neo-output-placeholder">Realiza una grabación para ver aquí la previsualización final.</p>
           )}
-          {!audioUrl && <p className="neo-output-placeholder">Realiza una grabación para ver aquí la previsualización final.</p>}
         </section>
 
-        <footer className="neo-footer neo-footer--inside">
-          <span>mode: audio_capture // runtime: {runtime}</span>
-          <span>cross-platform: web + windows + macos + linux + android + ios</span>
-        </footer>
+        {recordingFooter}
       </div>
     </main>
   );
