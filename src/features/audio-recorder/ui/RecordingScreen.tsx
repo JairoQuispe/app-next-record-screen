@@ -84,7 +84,7 @@ interface RecordingScreenProps {
   >;
   actions: Pick<
     AudioRecorderActions,
-    "startRecording" | "stopRecording" | "pauseRecording" | "resumeRecording"
+    "startRecording" | "stopRecording" | "pauseRecording" | "resumeRecording" | "saveRecording"
   >;
   animateIn: boolean;
   onBackToSetup: () => void;
@@ -100,7 +100,7 @@ export function RecordingScreen({ state, actions, animateIn, onBackToSetup }: Re
     spectrumLevels,
   } = state;
 
-  const { startRecording, stopRecording, pauseRecording, resumeRecording } = actions;
+  const { startRecording, stopRecording, pauseRecording, resumeRecording, saveRecording } = actions;
 
   const runtime = useMemo(() => (isTauriRuntime() ? "desktop/mobile (Tauri)" : "browser"), []);
 
@@ -209,9 +209,19 @@ export function RecordingScreen({ state, actions, animateIn, onBackToSetup }: Re
             <div className="neo-playback-card neo-animate-slide-up">
               <p className="neo-playback-title">GRABACIÓN LISTA</p>
               <audio controls src={audioUrl} className="neo-audio-player" />
-              <a href={audioUrl} download="recogni-audio.webm" className="neo-download-link">
-                DESCARGAR AUDIO
-              </a>
+              {isTauriRuntime() ? (
+                <button
+                  type="button"
+                  className="neo-download-link"
+                  onClick={() => void saveRecording()}
+                >
+                  GUARDAR AUDIO
+                </button>
+              ) : (
+                <a href={audioUrl} download="recogni-audio.webm" className="neo-download-link">
+                  DESCARGAR AUDIO
+                </a>
+              )}
             </div>
           )}
           {!audioUrl && <p className="neo-output-placeholder">Realiza una grabación para ver aquí la previsualización final.</p>}

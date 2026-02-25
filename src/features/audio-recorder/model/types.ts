@@ -28,6 +28,7 @@ export interface AudioRecorderActions {
   stopRecording: () => void;
   pauseRecording: () => void;
   resumeRecording: () => void;
+  saveRecording: () => Promise<void>;
   toggleMicrophone: () => Promise<void>;
   requestMicrophonePermission: () => Promise<boolean>;
   selectMicrophone: (deviceId: string) => void;

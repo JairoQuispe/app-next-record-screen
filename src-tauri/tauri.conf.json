@@ -1,11 +1,11 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "recogni",
+  "productName": "recogning",
   "version": "0.1.0",
-  "identifier": "com.recogni.app",
+  "identifier": "com.recogning.app",
   "build": {
     "beforeDevCommand": "npm run dev",
-    "devUrl": "http://localhost:1420",
+    "devUrl": "http://localhost:1421",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },
@@ -13,9 +13,11 @@
     "windows": [
       {
         "label": "main",
-        "title": "Recogni",
+        "title": "Recogning",
         "width": 800,
-        "height": 600
+        "height": 600,
+        "center": true,
+        "decorations": false
       }
     ],
     "security": {

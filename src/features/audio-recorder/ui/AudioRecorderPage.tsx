@@ -78,12 +78,14 @@ export function AudioRecorderPage() {
       stopRecording: recorder.stopRecording,
       pauseRecording: recorder.pauseRecording,
       resumeRecording: recorder.resumeRecording,
+      saveRecording: recorder.saveRecording,
     }),
     [
       recorder.startRecording,
       recorder.stopRecording,
       recorder.pauseRecording,
       recorder.resumeRecording,
+      recorder.saveRecording,
     ],
   );
 

@@ -27,6 +27,7 @@ body {
 .neo-app-container {
   position: relative;
   min-height: 100vh;
+  padding-top: var(--neo-titlebar-height, 0px);
   background-color: var(--neo-bg);
   background-image: radial-gradient(var(--dark-slate) 2px, transparent 2px);
   background-size: 24px 24px;
@@ -35,7 +36,7 @@ body {
 /* Neo-Brutalism Back Button */
 .neo-back-button {
   position: absolute;
-  top: 1.5rem;
+  top: calc(var(--neo-titlebar-height, 0px) + 1.5rem);
   left: 1.5rem;
   z-index: 100;
   background-color: var(--dark-slate);
@@ -134,6 +135,30 @@ body {
   animation-name: fade-in-scale;
 }
 
+:root:not([data-tauri="true"])[data-view-transition="audio-setup"]::view-transition-old(root) {
+  animation-duration: 0.55s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-name: audio-setup-exit;
+}
+
+:root:not([data-tauri="true"])[data-view-transition="audio-setup"]::view-transition-new(root) {
+  animation-duration: 0.55s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-name: audio-setup-enter;
+}
+
+:root[data-tauri="true"][data-view-transition="audio-setup"]::view-transition-old(root) {
+  animation-duration: 0.5s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-name: audio-setup-exit-desktop;
+}
+
+:root[data-tauri="true"][data-view-transition="audio-setup"]::view-transition-new(root) {
+  animation-duration: 0.5s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-name: audio-setup-enter-desktop;
+}
+
 @keyframes fade-out {
   from { opacity: 1; }
   to { opacity: 0; }
@@ -147,5 +172,53 @@ body {
   to { 
     opacity: 1;
     transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes audio-setup-exit {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.96) translateX(-12px);
+  }
+}
+
+@keyframes audio-setup-enter {
+  0% {
+    opacity: 0;
+    transform: scale(1.02) translateX(16px);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes audio-setup-exit-desktop {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.97) translateY(-12px);
+  }
+}
+
+@keyframes audio-setup-enter-desktop {
+  0% {
+    opacity: 0;
+    transform: scale(1.01) translateY(14px);
+    filter: blur(3px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
   }
 }

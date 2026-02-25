@@ -6,6 +6,7 @@ mod wasapi_loopback {
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Arc;
     use std::thread;
+    use crate::error::AppError;
     use windows::core::GUID;
     use windows::Win32::Media::Audio::{
         eConsole, eRender, IAudioCaptureClient, IAudioClient, IMMDeviceEnumerator,
@@ -26,24 +27,18 @@ mod wasapi_loopback {
 
     pub struct SystemAudioHandle {
         stop_flag: Arc<AtomicBool>,
-        join_handle: Option<thread::JoinHandle<Result<String, String>>>,
-    }
-
-    impl From<String> for crate::error::AppError {
-        fn from(s: String) -> Self {
-            crate::error::AppError::AudioCapture(s)
-        }
+        join_handle: Option<thread::JoinHandle<Result<String, AppError>>>,
     }
 
     impl SystemAudioHandle {
-        pub fn start(output_path: String) -> Result<Self, String> {
+        pub fn start(output_path: String) -> Result<Self, AppError> {
             let stop_flag = Arc::new(AtomicBool::new(false));
             let flag_clone = stop_flag.clone();
             let path_clone = output_path.clone();
 
             eprintln!("[audio_capture] Starting system audio capture to: {}", output_path);
 
-            let join_handle = thread::spawn(move || -> Result<String, String> {
+            let join_handle = thread::spawn(move || -> Result<String, AppError> {
                 unsafe { capture_thread(&path_clone, &flag_clone) }
             });
 
@@ -53,7 +48,7 @@ mod wasapi_loopback {
             })
         }
 
-        pub fn stop(&mut self) -> Result<String, String> {
+        pub fn stop(&mut self) -> Result<String, AppError> {
             eprintln!("[audio_capture] Stop requested");
             self.stop_flag.store(true, Ordering::SeqCst);
 
@@ -63,10 +58,10 @@ mod wasapi_loopback {
                         eprintln!("[audio_capture] Capture thread finished: {:?}", result);
                         result
                     }
-                    Err(_) => Err("Audio capture thread panicked".to_string()),
+                    Err(_) => Err(AppError::CaptureThreadPanicked),
                 }
             } else {
-                Err("Capture already stopped".to_string())
+                Err(AppError::CaptureAlreadyStopped)
             }
         }
     }
@@ -74,7 +69,7 @@ mod wasapi_loopback {
     unsafe fn capture_thread(
         output_path: &str,
         stop_flag: &AtomicBool,
-    ) -> Result<String, String> {
+    ) -> Result<String, AppError> {
         // Initialize COM on this thread as STA (apartment-threaded)
         // Using COINIT_APARTMENTTHREADED because audio device APIs work best with STA
         let com_result = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
@@ -96,30 +91,30 @@ mod wasapi_loopback {
     unsafe fn capture_loop(
         output_path: &str,
         stop_flag: &AtomicBool,
-    ) -> Result<String, String> {
+    ) -> Result<String, AppError> {
         // Create device enumerator
         let enumerator: IMMDeviceEnumerator =
             CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)
-                .map_err(|e| format!("Failed to create device enumerator: {}", e))?;
+                .map_err(|e| AppError::AudioCapture(format!("Failed to create device enumerator: {}", e)))?;
 
         eprintln!("[audio_capture] Device enumerator created");
 
         // Get default audio render (output) device
         let device = enumerator
             .GetDefaultAudioEndpoint(eRender, eConsole)
-            .map_err(|e| format!("No default audio output device: {}", e))?;
+            .map_err(|e| AppError::AudioCapture(format!("No default audio output device: {}", e)))?;
 
         eprintln!("[audio_capture] Got default audio endpoint");
 
         // Activate IAudioClient
         let audio_client: IAudioClient = device
             .Activate(CLSCTX_ALL, None)
-            .map_err(|e| format!("Failed to activate audio client: {}", e))?;
+            .map_err(|e| AppError::AudioCapture(format!("Failed to activate audio client: {}", e)))?;
 
         // Get the mix format (the format the device is currently using)
         let pwfx = audio_client
             .GetMixFormat()
-            .map_err(|e| format!("Failed to get mix format: {}", e))?;
+            .map_err(|e| AppError::AudioCapture(format!("Failed to get mix format: {}", e)))?;
 
         let wfx = &*pwfx;
         let sample_rate = wfx.nSamplesPerSec;
@@ -154,14 +149,19 @@ mod wasapi_loopback {
                 pwfx,
                 None,
             )
-            .map_err(|e| format!("Failed to initialize audio client for loopback: {}", e))?;
+            .map_err(|e| {
+                AppError::AudioCapture(format!(
+                    "Failed to initialize audio client for loopback: {}",
+                    e
+                ))
+            })?;
 
         eprintln!("[audio_capture] Audio client initialized for loopback");
 
         // Get capture client
         let capture_client: IAudioCaptureClient = audio_client
             .GetService()
-            .map_err(|e| format!("Failed to get capture client: {}", e))?;
+            .map_err(|e| AppError::AudioCapture(format!("Failed to get capture client: {}", e)))?;
 
         // Create WAV writer — always write as 32-bit float for simplicity
         let wav_spec = WavSpec {
@@ -172,12 +172,12 @@ mod wasapi_loopback {
         };
 
         let mut writer: WavWriter<BufWriter<File>> = WavWriter::create(output_path, wav_spec)
-            .map_err(|e| format!("Failed to create WAV file: {}", e))?;
+            .map_err(|e| AppError::WavEncode(format!("Failed to create WAV file: {}", e)))?;
 
         // Start capturing
         audio_client
             .Start()
-            .map_err(|e| format!("Failed to start audio capture: {}", e))?;
+            .map_err(|e| AppError::AudioCapture(format!("Failed to start audio capture: {}", e)))?;
 
         eprintln!("[audio_capture] Capture started! Looping...");
 
@@ -191,7 +191,7 @@ mod wasapi_loopback {
             loop {
                 let packet_length = capture_client
                     .GetNextPacketSize()
-                    .map_err(|e| format!("GetNextPacketSize failed: {}", e))?;
+                    .map_err(|e| AppError::AudioCapture(format!("GetNextPacketSize failed: {}", e)))?;
 
                 if packet_length == 0 {
                     break;
@@ -209,7 +209,7 @@ mod wasapi_loopback {
                         None,
                         None,
                     )
-                    .map_err(|e| format!("GetBuffer failed: {}", e))?;
+                    .map_err(|e| AppError::AudioCapture(format!("GetBuffer failed: {}", e)))?;
 
                 let frame_count = num_frames_available as usize;
                 let sample_count = frame_count * channels as usize;
@@ -219,7 +219,9 @@ mod wasapi_loopback {
 
                 if is_silent {
                     for _ in 0..sample_count {
-                        let _ = writer.write_sample(0.0f32);
+                        writer
+                            .write_sample(0.0f32)
+                            .map_err(|e| AppError::WavEncode(e.to_string()))?;
                     }
                 } else if is_float && bits_per_sample == 32 {
                     let data = std::slice::from_raw_parts(
@@ -227,7 +229,9 @@ mod wasapi_loopback {
                         sample_count,
                     );
                     for &sample in data {
-                        let _ = writer.write_sample(sample);
+                        writer
+                            .write_sample(sample)
+                            .map_err(|e| AppError::WavEncode(e.to_string()))?;
                     }
                 } else if !is_float && bits_per_sample == 16 {
                     // Convert i16 to f32 for the WAV writer
@@ -236,7 +240,9 @@ mod wasapi_loopback {
                         sample_count,
                     );
                     for &sample in data {
-                        let _ = writer.write_sample(sample as f32 / 32768.0);
+                        writer
+                            .write_sample(sample as f32 / 32768.0)
+                            .map_err(|e| AppError::WavEncode(e.to_string()))?;
                     }
                 } else {
                     // Fallback: treat as f32
@@ -245,7 +251,9 @@ mod wasapi_loopback {
                         sample_count,
                     );
                     for &sample in data {
-                        let _ = writer.write_sample(sample);
+                        writer
+                            .write_sample(sample)
+                            .map_err(|e| AppError::WavEncode(e.to_string()))?;
                     }
                 }
 
@@ -253,7 +261,7 @@ mod wasapi_loopback {
 
                 capture_client
                     .ReleaseBuffer(num_frames_available)
-                    .map_err(|e| format!("ReleaseBuffer failed: {}", e))?;
+                    .map_err(|e| AppError::AudioCapture(format!("ReleaseBuffer failed: {}", e)))?;
             }
         }
 
@@ -296,7 +304,9 @@ mod wasapi_loopback {
                         sample_count,
                     );
                     for &sample in data {
-                        let _ = writer.write_sample(sample);
+                        writer
+                            .write_sample(sample)
+                            .map_err(|e| AppError::WavEncode(e.to_string()))?;
                     }
                 }
                 total_frames += frame_count as u64;
@@ -313,7 +323,7 @@ mod wasapi_loopback {
         // Finalize WAV
         writer
             .finalize()
-            .map_err(|e| format!("Failed to finalize WAV: {}", e))?;
+            .map_err(|e| AppError::WavEncode(format!("Failed to finalize WAV: {}", e)))?;
 
         let file_size = std::fs::metadata(output_path).map(|m| m.len()).unwrap_or(0);
         eprintln!(
@@ -363,12 +373,16 @@ pub struct SystemAudioHandle;
 
 #[cfg(not(windows))]
 impl SystemAudioHandle {
-    pub fn start(_output_path: String) -> Result<Self, String> {
-        Err("System audio capture is only supported on Windows.".to_string())
+    pub fn start(_output_path: String) -> Result<Self, crate::error::AppError> {
+        Err(crate::error::AppError::AudioCapture(
+            "System audio capture is only supported on Windows.".to_string(),
+        ))
     }
 
-    pub fn stop(&mut self) -> Result<String, String> {
-        Err("System audio capture is only supported on Windows.".to_string())
+    pub fn stop(&mut self) -> Result<String, crate::error::AppError> {
+        Err(crate::error::AppError::AudioCapture(
+            "System audio capture is only supported on Windows.".to_string(),
+        ))
     }
 }
 

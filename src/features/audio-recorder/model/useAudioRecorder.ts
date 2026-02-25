@@ -92,6 +92,9 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
   const microphoneStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const recordedBlobRef = useRef<Blob | null>(null);
+  const recordedMimeTypeRef = useRef<string | null>(null);
+  const nativeWavPathRef = useRef<string | null>(null);
   const timerRef = useRef<number | null>(null);
   const permissionStatusRef = useRef<PermissionStatus | null>(null);
   const spectrumAudioContextRef = useRef<AudioContext | null>(null);
@@ -350,6 +353,9 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
 
   const resetRecordingData = useCallback(() => {
     chunksRef.current = [];
+    recordedBlobRef.current = null;
+    recordedMimeTypeRef.current = null;
+    nativeWavPathRef.current = null;
     setDurationSeconds(0);
     setAudioUrl((previous) => {
       revokeObjectUrlIfBlob(previous);
@@ -385,6 +391,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
         const wavFilePath = await stopNativeSystemAudioCapture();
         console.log("[useAudioRecorder] Got WAV path:", wavFilePath);
         nativeCaptureActiveRef.current = false;
+        nativeWavPathRef.current = wavFilePath;
 
         // If there's also a MediaRecorder running (mixed mode), stop it too
         const recorder = mediaRecorderRef.current;
@@ -450,6 +457,60 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       setStatus("recording");
     }
   }, [startTimer]);
+
+  const saveRecording = useCallback(async () => {
+    if (!audioUrl) {
+      return;
+    }
+
+    if (!isTauriRuntime()) {
+      return;
+    }
+
+    try {
+      setErrorMessage(null);
+
+      const { save } = await import("@tauri-apps/plugin-dialog");
+      const { readFile, writeFile } = await import("@tauri-apps/plugin-fs");
+
+      const mimeType = recordedMimeTypeRef.current;
+      const isWav = !!nativeWavPathRef.current;
+
+      const extension = isWav
+        ? "wav"
+        : mimeType?.includes("ogg")
+          ? "ogg"
+          : mimeType?.includes("mp4")
+            ? "mp4"
+            : "webm";
+
+      const outputPath = await save({
+        defaultPath: `recogni-audio.${extension}`,
+        filters: [{ name: "Audio", extensions: [extension] }],
+      });
+
+      if (!outputPath) {
+        return;
+      }
+
+      if (nativeWavPathRef.current) {
+        const contents = await readFile(nativeWavPathRef.current);
+        await writeFile(outputPath, contents);
+        return;
+      }
+
+      if (recordedBlobRef.current) {
+        const buffer = await recordedBlobRef.current.arrayBuffer();
+        const contents = new Uint8Array(buffer);
+        await writeFile(outputPath, contents);
+        return;
+      }
+
+      setErrorMessage("No recording data available to save.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Failed to save recording.");
+    }
+  }, [audioUrl]);
 
   const refreshAvailableMicrophones = useCallback(async () => {
     if (!navigator.mediaDevices?.enumerateDevices) {
@@ -595,6 +656,9 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
         const actualMimeType = recorder.mimeType || mimeType || "audio/webm";
         const blob = new Blob(chunksRef.current, { type: actualMimeType });
         const url = URL.createObjectURL(blob);
+
+        recordedBlobRef.current = blob;
+        recordedMimeTypeRef.current = actualMimeType;
 
         setAudioUrl((previous) => {
           revokeObjectUrlIfBlob(previous);
@@ -766,6 +830,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     stopRecording,
     pauseRecording,
     resumeRecording,
+    saveRecording,
     toggleMicrophone,
     requestMicrophonePermission,
     selectMicrophone,

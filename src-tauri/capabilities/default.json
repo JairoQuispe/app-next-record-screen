@@ -5,6 +5,26 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
+    "core:window:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-internal-toggle-maximize",
+    "core:window:allow-close",
+    "dialog:default",
+    "fs:default",
+    "fs:allow-read-file",
+    "fs:allow-write-file",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        "$HOME/**/*",
+        "$TEMP/**/*",
+        "$DESKTOP/**/*",
+        "$DOWNLOAD/**/*",
+        "$DOCUMENT/**/*"
+      ]
+    },
     "opener:default"
   ]
 }

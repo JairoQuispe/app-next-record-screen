@@ -1,0 +1,82 @@
+:root[data-tauri="true"] {
+  --neo-titlebar-height: 44px;
+}
+
+.neo-titlebar {
+  height: var(--neo-titlebar-height);
+  display: grid;
+  grid-template-columns: 1fr max-content;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+
+  background: var(--neo-titlebar-bg, var(--dark-slate));
+  border-bottom: var(--neo-border);
+  box-shadow: 0 6px 0 var(--neo-black);
+  user-select: none;
+}
+
+.neo-titlebar-drag {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 10px;
+}
+
+.neo-titlebar-appname {
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--neo-fg);
+  font-size: 0.8rem;
+}
+
+.neo-titlebar-controls {
+  display: flex;
+}
+
+.neo-titlebar-btn {
+  appearance: none;
+  padding: 0;
+  margin: 0;
+  border: none;
+  width: 44px;
+  height: var(--neo-titlebar-height);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--neo-fg);
+  cursor: pointer;
+}
+
+.neo-titlebar-btn:hover,
+.neo-titlebar-btn:focus-visible {
+  background: var(--electric-purple);
+  color: var(--neo-black);
+  outline: none;
+}
+
+.neo-titlebar-btn--close:hover,
+.neo-titlebar-btn--close:focus-visible {
+  background: #c73638;
+  color: var(--neo-black);
+}
+
+.neo-titlebar-btn--minimize:hover,
+.neo-titlebar-btn--minimize:focus-visible,
+.neo-titlebar-btn--maximize:hover,
+.neo-titlebar-btn--maximize:focus-visible {
+  background: #f7f2c1;
+  color: var(--neo-black);
+}
+
+*[data-tauri-drag-region] {
+  app-region: drag;
+}
+
+.neo-titlebar-btn {
+  app-region: no-drag;
+}
