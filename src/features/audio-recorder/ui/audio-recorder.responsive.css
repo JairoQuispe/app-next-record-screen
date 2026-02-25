@@ -1,0 +1,83 @@
+@media (max-width: 900px) {
+  .neo-recording-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .neo-control-panel {
+    border-left: none;
+    border-top: 4px solid var(--neo-black);
+  }
+
+  .neo-main-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .neo-record-button,
+  .neo-stop-button {
+    min-height: 66px;
+    font-size: 1.05rem;
+  }
+
+  .neo-footer {
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .neo-dashboard {
+    max-width: 100%;
+  }
+
+  .neo-topbar-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+  }
+
+  .neo-preview--recording {
+    min-height: 290px;
+  }
+
+  .neo-side-actions,
+  .neo-main-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .neo-output {
+    padding: 0.9rem;
+  }
+
+  .neo-footer {
+    padding: 0.75rem 1rem;
+    font-size: 0.65rem;
+  }
+
+  .neo-setup-card {
+    padding: 1rem;
+    border-width: 3px;
+    box-shadow: 6px 6px 0 var(--neo-black);
+  }
+
+  .neo-setup-content {
+    padding-top: 0.85rem;
+    gap: 1rem;
+  }
+
+  .neo-source-options {
+    gap: 0.7rem;
+  }
+
+  .neo-source-btn {
+    min-height: 70px;
+    padding: 0.6rem 0.8rem;
+  }
+
+  .neo-source-text {
+    font-size: 0.96rem;
+  }
+
+  .neo-source-subtext {
+    font-size: 0.8rem;
+  }
+}

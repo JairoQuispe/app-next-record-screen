@@ -12,6 +12,7 @@ import {
   startNativeSystemAudioCapture,
   stopNativeSystemAudioCapture,
   isNativeSystemAudioAvailable,
+  convertFilePathToUrl,
 } from "@shared/lib/runtime/tauriAudioCapture";
 import { SPECTRUM_BAR_COUNT } from "../lib/constants";
 
@@ -162,7 +163,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     }
 
     setSpectrumLevels(Array.from({ length: SPECTRUM_BAR_COUNT }, () => 0));
-  }, [SPECTRUM_BAR_COUNT]);
+  }, []);
 
   const startSpectrumMonitor = useCallback(
     (stream: MediaStream) => {
@@ -204,9 +205,9 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
         }
 
         setSpectrumLevels(nextLevels);
-      }, 70);
+      }, 120);
     },
-    [SPECTRUM_BAR_COUNT, stopSpectrumMonitor],
+    [stopSpectrumMonitor],
   );
 
   const clearStream = useCallback(() => {
@@ -362,8 +363,8 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       setSpectrumLevels(
         Array.from({ length: SPECTRUM_BAR_COUNT }, () => 0.1 + Math.random() * 0.6),
       );
-    }, 100);
-  }, [SPECTRUM_BAR_COUNT]);
+    }, 200);
+  }, []);
 
   const stopFakeSpectrum = useCallback(() => {
     if (fakeSpectrumTimerRef.current !== null) {
@@ -371,7 +372,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       fakeSpectrumTimerRef.current = null;
     }
     setSpectrumLevels(Array.from({ length: SPECTRUM_BAR_COUNT }, () => 0));
-  }, [SPECTRUM_BAR_COUNT]);
+  }, []);
 
   const stopRecording = useCallback(async () => {
     stopTimer();
@@ -391,12 +392,14 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
           recorder.stop();
         }
 
-        // For pure system audio, use the data URL returned by Rust directly
+        // For pure system audio, convert file path to asset protocol URL
+        // so the webview loads the WAV directly from disk (zero IPC overhead).
         if (audioInputSource === "system") {
-          console.log("[useAudioRecorder] Setting audio URL (data URL length=%d)", wavFilePath.length);
+          const assetUrl = convertFilePathToUrl(wavFilePath);
+          console.log("[useAudioRecorder] Setting asset URL:", assetUrl);
           setAudioUrl((previous) => {
             revokeObjectUrlIfBlob(previous);
-            return wavFilePath;
+            return assetUrl;
           });
         }
         // For mixed mode, the MediaRecorder onstop handler sets the mic audio URL

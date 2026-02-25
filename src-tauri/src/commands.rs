@@ -1,4 +1,3 @@
-use base64::Engine;
 use tauri::State;
 
 use crate::audio_capture::{self, SystemAudioHandle};
@@ -48,21 +47,12 @@ pub fn stop_system_audio_capture(
     match capture_lock.take() {
         Some(mut handle) => {
             let wav_path = handle.stop()?;
-            eprintln!("[commands] Reading WAV file: {}", wav_path);
+            eprintln!("[commands] WAV file ready at: {}", wav_path);
 
-            let wav_bytes = std::fs::read(&wav_path)?;
-
-            eprintln!("[commands] WAV file size: {} bytes", wav_bytes.len());
-
-            // Clean up temp file
-            let _ = std::fs::remove_file(&wav_path);
-
-            // Encode as base64 data URL
-            let b64 = base64::engine::general_purpose::STANDARD.encode(&wav_bytes);
-            let data_url = format!("data:audio/wav;base64,{}", b64);
-
-            eprintln!("[commands] Returning data URL, length={}", data_url.len());
-            Ok(data_url)
+            // Return the file path directly — the frontend uses Tauri's asset
+            // protocol (`convertFileSrc`) to load it, avoiding the ~10 MB
+            // base64 round-trip through IPC that was freezing the UI.
+            Ok(wav_path)
         }
         None => Err(AppError::NoCaptureRunning),
     }

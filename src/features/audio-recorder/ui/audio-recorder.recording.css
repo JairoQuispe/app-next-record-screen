@@ -1,0 +1,580 @@
+.neo-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 4px solid var(--neo-black);
+  background-color: var(--deep-charcoal);
+}
+
+.neo-topbar--recording {
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.neo-topbar-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.85rem;
+}
+
+.neo-topbar-label {
+  font-weight: 800;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  color: var(--electric-yellow);
+}
+
+.neo-topbar-mode {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.neo-status-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border: 2px solid var(--neo-black);
+  background-color: var(--neo-black);
+  color: var(--neon-green);
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  border-radius: 999px;
+}
+
+.neo-status-dot {
+  width: 8px;
+  height: 8px;
+  background-color: currentColor;
+  border-radius: 50%;
+}
+
+.neo-status-dot.is-live {
+  background-color: var(--hot-pink);
+  color: var(--hot-pink);
+  animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0.5;
+    transform: scale(1.5);
+  }
+}
+
+.neo-preview {
+  position: relative;
+  height: 300px;
+  background-color: var(--deep-charcoal);
+  border-bottom: 4px solid var(--neo-black);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.neo-preview--recording {
+  height: 100%;
+  min-height: 360px;
+  border-bottom: none;
+}
+
+.neo-grid-overlay {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--dark-slate) 1px, transparent 1px),
+    linear-gradient(90deg, var(--dark-slate) 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0.5;
+}
+
+.neo-preview-content {
+  position: relative;
+  z-index: 2;
+  width: min(94%, 760px);
+  height: min(82%, 420px);
+}
+
+.neo-region-frame {
+  width: 100%;
+  height: 100%;
+  border: 2px dashed var(--electric-purple);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background-color: rgba(42, 38, 51, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.neo-region-badge {
+  position: absolute;
+  top: -12px;
+  left: 16px;
+  background-color: var(--electric-purple);
+  color: var(--neo-black);
+  padding: 0 8px;
+  font-weight: 800;
+  font-size: 0.75rem;
+  border: 2px solid var(--neo-black);
+}
+
+.neo-audio-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.neo-audio-state-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  color: var(--neo-fg);
+}
+
+.neo-audio-state-time {
+  margin: 0;
+  font-size: 3rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--neon-green);
+  text-shadow: 2px 2px 0 var(--neo-black);
+}
+
+.neo-waveform,
+.neo-spectrum {
+  display: flex;
+  height: 92px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border: 2px solid var(--neo-black);
+  background: #050507;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.04);
+}
+
+.neo-waveform-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.neo-waveform-path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.neo-waveform-path--top {
+  stroke: rgba(245, 245, 245, 0.92);
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.16));
+}
+
+.neo-waveform-path--bottom {
+  stroke: rgba(255, 20, 20, 0.9);
+  filter: drop-shadow(0 0 6px rgba(255, 0, 0, 0.2));
+}
+
+.neo-waveform-col {
+  width: 3px;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  align-items: stretch;
+  justify-items: center;
+}
+
+.neo-waveform-bar {
+  width: 100%;
+  border-radius: 1px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55);
+}
+
+.neo-waveform-bar--top {
+  align-self: end;
+  background: rgba(245, 245, 245, 0.92);
+  box-shadow:
+    0 0 12px rgba(255, 255, 255, 0.18),
+    0 0 0 1px rgba(0, 0, 0, 0.55);
+}
+
+.neo-waveform-bar--bottom {
+  align-self: start;
+  background: rgba(255, 20, 20, 0.9);
+  box-shadow:
+    0 0 12px rgba(255, 0, 0, 0.22),
+    0 0 0 1px rgba(0, 0, 0, 0.55);
+}
+
+/* Backward compatibility if any view still renders the old spectrum bars */
+.neo-spectrum-bar {
+  width: 3px;
+  background: rgba(245, 245, 245, 0.92);
+  min-height: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.55);
+  border-radius: 1px;
+  transform-origin: center;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.18);
+  transition: height 80ms linear, transform 80ms linear, opacity 80ms linear, filter 80ms linear;
+}
+
+.neo-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  background-color: var(--dark-slate);
+  border-bottom: 4px solid var(--neo-black);
+}
+
+.neo-controls--stack {
+  width: 100%;
+  border: 3px solid var(--neo-black);
+  background: #252231;
+  box-shadow: 4px 4px 0 var(--neo-black);
+  padding: 1rem;
+  border-bottom: none;
+}
+
+.neo-recording-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 0;
+  border-bottom: 4px solid var(--neo-black);
+}
+
+.neo-control-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background: #2b2737;
+  border-left: 4px solid var(--neo-black);
+}
+
+.neo-side-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.neo-button {
+  background-color: var(--neo-bg);
+  color: var(--neo-fg);
+  border: 4px solid var(--neo-black);
+  font-family: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+  box-shadow: 4px 4px 0 var(--neo-black);
+}
+
+.neo-button:active:not(:disabled) {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 var(--neo-black);
+}
+
+.neo-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: translate(4px, 4px);
+}
+
+.neo-side-button {
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  height: 80px;
+  padding: 0.5rem;
+  font-size: 0.7rem;
+  position: relative;
+  background-color: var(--deep-charcoal);
+}
+
+.neo-side-button:hover:not(:disabled) {
+  background-color: var(--electric-purple);
+  color: var(--neo-black);
+}
+
+.neo-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.neo-mic-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.neo-mic-indicator {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  border: 2px solid var(--neo-black);
+  background-color: var(--electric-purple);
+  color: var(--neo-black);
+  font-weight: 900;
+}
+
+.neo-mic-indicator.on {
+  background-color: var(--neon-green);
+}
+
+.neo-mic-indicator.off {
+  background-color: var(--hot-pink);
+}
+
+.neo-soon {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  border: 2px solid var(--neo-black);
+  background-color: var(--electric-yellow);
+  color: var(--neo-black);
+  font-weight: 900;
+}
+
+.neo-main-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  width: 100%;
+}
+
+.neo-record-button {
+  min-height: 58px;
+  width: 100%;
+  padding: 0 1rem;
+  font-size: 1rem;
+  background-color: var(--hot-pink);
+  color: var(--neo-black);
+  gap: 0.5rem;
+  border-radius: 0;
+}
+
+.neo-record-button:hover:not(:disabled) {
+  background-color: #ff60b0;
+}
+
+.neo-record-dot {
+  width: 16px;
+}
+
+.neo-stop-button {
+  min-height: 58px;
+  width: 100%;
+  padding: 0 1rem;
+  font-size: 1rem;
+  background-color: var(--deep-charcoal);
+  color: var(--electric-yellow);
+  border-color: var(--electric-yellow);
+}
+
+.neo-stop-button:hover:not(:disabled) {
+  background-color: var(--neo-black);
+}
+
+.neo-output {
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background-color: var(--deep-charcoal);
+}
+
+.neo-output-placeholder {
+  margin: 0;
+  border: 3px dashed var(--neo-black);
+  background: #282434;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.9rem 1rem;
+}
+
+.neo-error {
+  margin: 0;
+  padding: 1rem;
+  background-color: var(--hot-pink);
+  color: var(--neo-black);
+  border: 4px solid var(--neo-black);
+  font-weight: 700;
+}
+
+.neo-mic-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  border: 4px solid var(--neo-black);
+  background-color: var(--dark-slate);
+  box-shadow: 4px 4px 0 var(--neo-black);
+}
+
+.neo-mic-picker-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--electric-yellow);
+}
+
+.neo-mic-picker {
+  padding: 0.75rem;
+  border: 4px solid var(--neo-black);
+  background-color: var(--deep-charcoal);
+  color: var(--neo-fg);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  appearance: none;
+  border-radius: 0;
+}
+
+.neo-mic-picker:focus {
+  outline: none;
+  border-color: var(--electric-purple);
+  box-shadow: 4px 4px 0 var(--neo-black);
+}
+
+.neo-mic-picker:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.neo-mic-meta {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--neo-fg);
+  opacity: 0.8;
+}
+
+.neo-mic-meta strong {
+  color: var(--neon-green);
+}
+
+.neo-permission-btn {
+  align-self: flex-start;
+  margin-top: 0.5rem;
+}
+
+.neo-playback-card {
+  padding: 1.5rem;
+  border: 4px solid var(--neo-black);
+  background-color: var(--electric-purple);
+  color: var(--neo-black);
+  box-shadow: 4px 4px 0 var(--neo-black);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.neo-playback-title {
+  margin: 0;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.neo-audio-player {
+  width: 100%;
+  height: 48px;
+  border-radius: 0;
+}
+
+.neo-audio-player::-webkit-media-controls-panel {
+  background-color: var(--deep-charcoal);
+  border-radius: 0;
+}
+
+.neo-audio-player::-webkit-media-controls-current-time-display,
+.neo-audio-player::-webkit-media-controls-time-remaining-display {
+  color: var(--neo-fg);
+}
+
+.neo-download-link {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--neo-black);
+  color: var(--neon-green);
+  text-decoration: none;
+  font-weight: 800;
+  border: 4px solid var(--neo-black);
+  text-transform: uppercase;
+  text-align: center;
+  transition: all 0.1s;
+}
+
+.neo-download-link:hover {
+  background-color: var(--neon-green);
+  color: var(--neo-black);
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 var(--neo-black);
+}
+
+.neo-download-link:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--neo-black);
+}
+
+.neo-footer {
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  background-color: var(--neo-black);
+  color: var(--electric-yellow);
+  font-family: monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.neo-footer--inside {
+  border-top: 4px solid var(--neo-black);
+  margin-top: 0;
+}
+
+@keyframes neo-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.3);
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

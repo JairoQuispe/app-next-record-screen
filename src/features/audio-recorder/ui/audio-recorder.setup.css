@@ -1,0 +1,243 @@
+/* Setup screen (reference style) */
+.neo-setup-card {
+  width: 100%;
+  max-width: 760px;
+  background: #2a2633;
+  border: 4px solid var(--neo-black);
+  box-shadow: 10px 10px 0 var(--neo-black);
+  padding: 1.4rem;
+  color: #ffffff;
+}
+
+.neo-setup-header {
+  position: relative;
+  margin-bottom: 1.25rem;
+}
+
+.neo-setup-title {
+  margin: 0;
+  font-size: 1.9rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.neo-setup-badge {
+  position: absolute;
+  right: 0;
+  top: -0.3rem;
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: #101010;
+  background: var(--electric-yellow);
+  border: 3px solid var(--neo-black);
+  padding: 0.2rem 0.5rem;
+}
+
+.neo-setup-content {
+  border-top: 4px solid var(--neo-black);
+  padding-top: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.neo-setup-section {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.neo-setup-label {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--electric-yellow);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.neo-source-options {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.neo-source-btn {
+  width: 100%;
+  border: 4px solid var(--neo-black);
+  background: #1f1d2a;
+  color: #ffffff;
+  min-height: 78px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--neo-black);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.neo-source-btn:hover:not(:disabled) {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--neo-black);
+}
+
+.neo-source-btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--neo-black);
+}
+
+.neo-source-btn:focus-visible {
+  outline: 3px solid var(--electric-yellow);
+  outline-offset: 2px;
+}
+
+.neo-source-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.neo-source-btn-static {
+  cursor: default;
+}
+
+.neo-source-content {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.neo-source-icon-wrapper {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  color: #f8f8f8;
+}
+
+.neo-source-icon-svg {
+  width: 24px;
+  height: 24px;
+}
+
+.neo-source-copy {
+  display: grid;
+  gap: 0.15rem;
+  text-align: left;
+}
+
+.neo-source-text {
+  font-size: 1.03rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.neo-source-subtext {
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.neo-source-state {
+  width: 32px;
+  height: 32px;
+  border: 4px solid var(--neo-black);
+  background: #2d2a39;
+  color: #111;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.neo-source-state.is-active {
+  background: var(--neon-green);
+}
+
+.neo-source-btn.active {
+  background: #222030;
+}
+
+.neo-input-group {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.neo-select-wrapper {
+  position: relative;
+}
+
+.neo-setup-select {
+  width: 100%;
+  border: 4px solid var(--neo-black);
+  background: #1f1d2a;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 0.85rem 2.5rem 0.85rem 0.9rem;
+  appearance: none;
+}
+
+.neo-select-arrow {
+  position: absolute;
+  right: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--electric-yellow);
+  font-size: 0.72rem;
+}
+
+.neo-setup-info {
+  margin: 0;
+  border: 3px dashed var(--neo-black);
+  padding: 0.65rem 0.8rem;
+  font-size: 0.88rem;
+  background: #252231;
+}
+
+.neo-btn-primary {
+  border: 4px solid var(--neo-black);
+  background: var(--electric-purple);
+  color: var(--neo-black);
+  font-weight: 900;
+  font-family: inherit;
+  padding: 0.8rem 0.9rem;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--neo-black);
+}
+
+.neo-btn-primary:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--neo-black);
+}
+
+.neo-setup-footer {
+  margin-top: 1rem;
+}
+
+.neo-setup-start {
+  width: 100%;
+  border: 4px solid var(--neo-black);
+  background: var(--hot-pink);
+  color: var(--neo-black);
+  font-family: inherit;
+  font-weight: 900;
+  font-size: 1rem;
+  padding: 0.9rem;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--neo-black);
+}
+
+.neo-setup-start:hover:not(:disabled) {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--neo-black);
+  background: var(--electric-yellow);
+}
+
+.neo-setup-start:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

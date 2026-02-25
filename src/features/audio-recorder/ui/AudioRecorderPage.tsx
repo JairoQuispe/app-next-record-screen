@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAudioRecorder } from "../model/useAudioRecorder";
 import { SetupScreen } from "./SetupScreen";
 import { RecordingScreen } from "./RecordingScreen";
@@ -10,52 +10,103 @@ export function AudioRecorderPage() {
   const [animateIn, setAnimateIn] = useState(false);
 
   useEffect(() => {
-    requestAnimationFrame(() => {
+    const frameId = requestAnimationFrame(() => {
       setAnimateIn(true);
     });
+
+    return () => {
+      cancelAnimationFrame(frameId);
+    };
   }, []);
+
+  const setupState = useMemo(
+    () => ({
+      isSupported: recorder.isSupported,
+      isSystemAudioSupported: recorder.isSystemAudioSupported,
+      errorMessage: recorder.errorMessage,
+      microphonePermission: recorder.microphonePermission,
+      availableMicrophones: recorder.availableMicrophones,
+      selectedMicrophoneId: recorder.selectedMicrophoneId,
+      audioInputSource: recorder.audioInputSource,
+    }),
+    [
+      recorder.isSupported,
+      recorder.isSystemAudioSupported,
+      recorder.errorMessage,
+      recorder.microphonePermission,
+      recorder.availableMicrophones,
+      recorder.selectedMicrophoneId,
+      recorder.audioInputSource,
+    ],
+  );
+
+  const setupActions = useMemo(
+    () => ({
+      requestMicrophonePermission: recorder.requestMicrophonePermission,
+      selectMicrophone: recorder.selectMicrophone,
+      setAudioInputSource: recorder.setAudioInputSource,
+    }),
+    [
+      recorder.requestMicrophonePermission,
+      recorder.selectMicrophone,
+      recorder.setAudioInputSource,
+    ],
+  );
+
+  const recordingState = useMemo(
+    () => ({
+      status: recorder.status,
+      durationSeconds: recorder.durationSeconds,
+      audioUrl: recorder.audioUrl,
+      isMicrophoneEnabled: recorder.isMicrophoneEnabled,
+      audioInputSource: recorder.audioInputSource,
+      spectrumLevels: recorder.spectrumLevels,
+    }),
+    [
+      recorder.status,
+      recorder.durationSeconds,
+      recorder.audioUrl,
+      recorder.isMicrophoneEnabled,
+      recorder.audioInputSource,
+      recorder.spectrumLevels,
+    ],
+  );
+
+  const recordingActions = useMemo(
+    () => ({
+      startRecording: recorder.startRecording,
+      stopRecording: recorder.stopRecording,
+      pauseRecording: recorder.pauseRecording,
+      resumeRecording: recorder.resumeRecording,
+    }),
+    [
+      recorder.startRecording,
+      recorder.stopRecording,
+      recorder.pauseRecording,
+      recorder.resumeRecording,
+    ],
+  );
+
+  const handleContinue = useCallback(() => setIsSetupComplete(true), []);
+  const handleBackToSetup = useCallback(() => setIsSetupComplete(false), []);
 
   if (!isSetupComplete) {
     return (
       <SetupScreen
-        state={{
-          isSupported: recorder.isSupported,
-          isSystemAudioSupported: recorder.isSystemAudioSupported,
-          errorMessage: recorder.errorMessage,
-          microphonePermission: recorder.microphonePermission,
-          availableMicrophones: recorder.availableMicrophones,
-          selectedMicrophoneId: recorder.selectedMicrophoneId,
-          audioInputSource: recorder.audioInputSource,
-        }}
-        actions={{
-          requestMicrophonePermission: recorder.requestMicrophonePermission,
-          selectMicrophone: recorder.selectMicrophone,
-          setAudioInputSource: recorder.setAudioInputSource,
-        }}
+        state={setupState}
+        actions={setupActions}
         animateIn={animateIn}
-        onContinue={() => setIsSetupComplete(true)}
+        onContinue={handleContinue}
       />
     );
   }
 
   return (
     <RecordingScreen
-      state={{
-        status: recorder.status,
-        durationSeconds: recorder.durationSeconds,
-        audioUrl: recorder.audioUrl,
-        isMicrophoneEnabled: recorder.isMicrophoneEnabled,
-        audioInputSource: recorder.audioInputSource,
-        spectrumLevels: recorder.spectrumLevels,
-      }}
-      actions={{
-        startRecording: recorder.startRecording,
-        stopRecording: recorder.stopRecording,
-        pauseRecording: recorder.pauseRecording,
-        resumeRecording: recorder.resumeRecording,
-      }}
+      state={recordingState}
+      actions={recordingActions}
       animateIn={animateIn}
-      onBackToSetup={() => setIsSetupComplete(false)}
+      onBackToSetup={handleBackToSetup}
     />
   );
 }

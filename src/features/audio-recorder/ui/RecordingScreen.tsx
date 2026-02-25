@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { SettingsIcon, MixerIcon } from "@shared/ui/icons";
 import { formatDuration } from "@shared/lib/utils";
 import { isTauriRuntime } from "@shared/lib/runtime/isTauriRuntime";
@@ -48,6 +48,29 @@ function levelsToWavePoints(
     return { x, y };
   });
 }
+
+const WAVEFORM_WIDTH = 1000;
+const WAVEFORM_HEIGHT = 240;
+const WAVEFORM_MID = WAVEFORM_HEIGHT / 2;
+const WAVEFORM_AMPLITUDE = WAVEFORM_HEIGHT * 0.38;
+
+const WaveformPaths = memo(function WaveformPaths({ levels }: { levels: number[] }) {
+  const { topPath, bottomPath } = useMemo(() => {
+    const topPoints = levelsToWavePoints(levels, WAVEFORM_WIDTH, WAVEFORM_MID - 8, WAVEFORM_AMPLITUDE, -1);
+    const bottomPoints = levelsToWavePoints(levels, WAVEFORM_WIDTH, WAVEFORM_MID + 8, WAVEFORM_AMPLITUDE, 1);
+    return {
+      topPath: buildSmoothPath(topPoints),
+      bottomPath: buildSmoothPath(bottomPoints),
+    };
+  }, [levels]);
+
+  return (
+    <>
+      <path className="neo-waveform-path neo-waveform-path--top" d={topPath} />
+      <path className="neo-waveform-path neo-waveform-path--bottom" d={bottomPath} />
+    </>
+  );
+});
 
 interface RecordingScreenProps {
   state: Pick<
@@ -118,37 +141,7 @@ export function RecordingScreen({ state, actions, animateIn, onBackToSetup }: Re
                       role="presentation"
                       focusable="false"
                     >
-                      {(() => {
-                        const width = 1000;
-                        const height = 240;
-                        const mid = height / 2;
-                        const amplitude = height * 0.38;
-
-                        const topPoints = levelsToWavePoints(
-                          spectrumLevels,
-                          width,
-                          mid - 8,
-                          amplitude,
-                          -1,
-                        );
-                        const bottomPoints = levelsToWavePoints(
-                          spectrumLevels,
-                          width,
-                          mid + 8,
-                          amplitude,
-                          1,
-                        );
-
-                        const topPath = buildSmoothPath(topPoints);
-                        const bottomPath = buildSmoothPath(bottomPoints);
-
-                        return (
-                          <>
-                            <path className="neo-waveform-path neo-waveform-path--top" d={topPath} />
-                            <path className="neo-waveform-path neo-waveform-path--bottom" d={bottomPath} />
-                          </>
-                        );
-                      })()}
+                      <WaveformPaths levels={spectrumLevels} />
                     </svg>
                   </div>
                 </div>

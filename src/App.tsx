@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { AudioRecorderPage } from "@features/audio-recorder";
 import { SelectionPage } from "@features/selection";
 import "./App.css";
@@ -8,7 +8,7 @@ type AppMode = "selection" | "audio" | "screen";
 function App() {
   const [mode, setMode] = useState<AppMode>("selection");
 
-  const navigateTo = (newMode: AppMode) => {
+  const navigateTo = useCallback((newMode: AppMode) => {
     // Check if the browser supports View Transitions API
     if (!document.startViewTransition) {
       setMode(newMode);
@@ -19,7 +19,7 @@ function App() {
     document.startViewTransition(() => {
       setMode(newMode);
     });
-  };
+  }, []);
 
   if (mode === "audio") {
     return (
