@@ -12,13 +12,21 @@
   "app": {
     "windows": [
       {
-        "title": "recogni",
+        "label": "main",
+        "title": "Recogni",
         "width": 800,
         "height": 600
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: asset: https://asset.localhost; media-src 'self' data: blob: asset: https://asset.localhost; connect-src 'self' ipc: http://ipc.localhost asset: https://asset.localhost;",
+      "assetProtocol": {
+        "enable": true,
+        "scope": {
+          "allow": ["**"],
+          "deny": []
+        }
+      }
     }
   },
   "bundle": {

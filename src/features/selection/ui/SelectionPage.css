@@ -1,0 +1,135 @@
+/* Neo-brutalism design system (Dark Mode - Minimalist) */
+:root {
+  --neo-border-width: 4px;
+}
+
+.neo-selection-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--neo-bg);
+  background-image: radial-gradient(var(--dark-slate) 2px, transparent 2px);
+  background-size: 24px 24px;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+  color: var(--neo-fg);
+}
+
+/* Main Container */
+.neo-selection-container {
+  width: 100%;
+  max-width: 800px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rem;
+}
+
+.neo-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.neo-title {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 900;
+  line-height: 1.1;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  text-shadow: 4px 4px 0 var(--electric-yellow);
+  -webkit-text-stroke: 2px var(--neo-black);
+  color: var(--hot-pink);
+}
+
+/* Minimal Actions */
+.neo-minimal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  width: 100%;
+  max-width: 500px;
+}
+
+.neo-minimal-btn {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+  padding: 1.5rem 2rem;
+  background-color: var(--dark-slate);
+  border: var(--neo-border);
+  box-shadow: var(--neo-shadow);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+  outline: none;
+  font-family: inherit;
+}
+
+.neo-btn-icon-svg {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.neo-btn-text {
+  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  color: var(--neo-fg);
+}
+
+/* Specific Colors for Minimal Buttons */
+.neo-btn-pink {
+  background-color: var(--hot-pink);
+}
+.neo-btn-pink .neo-btn-text,
+.neo-btn-pink .neo-btn-icon-svg {
+  color: var(--neo-black);
+}
+
+.neo-btn-green {
+  background-color: var(--electric-purple);
+}
+.neo-btn-green .neo-btn-text,
+.neo-btn-green .neo-btn-icon-svg {
+  color: var(--neo-black);
+}
+
+/* Hover and Active states */
+.neo-minimal-btn:hover,
+.neo-minimal-btn:focus-visible {
+  transform: translate(-4px, -4px);
+  box-shadow: var(--neo-shadow-hover);
+}
+
+.neo-minimal-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--neo-black);
+}
+
+.neo-minimal-btn:hover .neo-btn-icon-svg,
+.neo-minimal-btn:focus-visible .neo-btn-icon-svg {
+  transform: scale(1.1) rotate(-5deg);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .neo-minimal-btn {
+    padding: 1.2rem 1.5rem;
+    gap: 1rem;
+  }
+  
+  .neo-btn-icon-svg {
+    width: 28px;
+    height: 28px;
+  }
+}

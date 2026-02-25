@@ -7,6 +7,13 @@ import type {
   MicrophonePermissionStatus,
   RecorderStatus,
 } from "./types";
+import { isTauriRuntime } from "@shared/lib/runtime/isTauriRuntime";
+import {
+  startNativeSystemAudioCapture,
+  stopNativeSystemAudioCapture,
+  isNativeSystemAudioAvailable,
+} from "@shared/lib/runtime/tauriAudioCapture";
+import { SPECTRUM_BAR_COUNT } from "../lib/constants";
 
 const CANDIDATE_MIME_TYPES = [
   "audio/webm;codecs=opus",
@@ -44,19 +51,27 @@ function getPermissionErrorMessage(error: unknown): string {
 
 function getSystemAudioUnavailableMessage(displaySurface: string | undefined): string {
   if (displaySurface === "browser") {
-    return "No tab audio was shared. In the picker, select a browser tab and enable 'Share tab audio'.";
+    return "No tab audio was shared. Select a browser tab and check 'Also share tab audio' at the bottom of the picker.";
   }
 
-  if (displaySurface === "window" || displaySurface === "monitor") {
-    return "System audio was not provided for the selected window/screen. Try sharing a browser tab and enable 'Share tab audio'.";
+  if (displaySurface === "window") {
+    return "Window sharing does not include audio. Select the 'Entire Screen' tab in the picker and check 'Also share system audio'.";
   }
 
-  return "No system audio track was shared. In the picker, enable 'Share tab audio' or equivalent option.";
+  if (displaySurface === "monitor") {
+    return "No system audio was shared. Make sure 'Also share system audio' is checked at the bottom of the screen picker.";
+  }
+
+  return "No audio track was received. In the picker, select a screen or tab and enable 'Also share system/tab audio' at the bottom.";
+}
+
+function revokeObjectUrlIfBlob(url: string | null): void {
+  if (url?.startsWith("blob:")) {
+    URL.revokeObjectURL(url);
+  }
 }
 
 export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
-  const SPECTRUM_BAR_COUNT = 28;
-
   const [status, setStatus] = useState<RecorderStatus>("idle");
   const [durationSeconds, setDurationSeconds] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -78,12 +93,15 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
   const permissionStatusRef = useRef<PermissionStatus | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const spectrumAudioContextRef = useRef<AudioContext | null>(null);
+  const mixAudioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const spectrumTimerRef = useRef<number | null>(null);
   const mixDestinationRef = useRef<MediaStreamAudioDestinationNode | null>(null);
   const mixSourceNodesRef = useRef<MediaStreamAudioSourceNode[]>([]);
+  const nativeCaptureActiveRef = useRef(false);
+  const fakeSpectrumTimerRef = useRef<number | null>(null);
 
   const isSupported = useMemo(() => {
     return (
@@ -94,13 +112,22 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     );
   }, []);
 
-  const isSystemAudioSupported = useMemo(() => {
+  const [isSystemAudioSupported, setIsSystemAudioSupported] = useState(() => {
+    if (isTauriRuntime()) return true;
     return (
       typeof window !== "undefined" &&
       typeof navigator !== "undefined" &&
       !!navigator.mediaDevices?.getDisplayMedia &&
       typeof MediaRecorder !== "undefined"
     );
+  });
+
+  useEffect(() => {
+    if (isTauriRuntime()) {
+      isNativeSystemAudioAvailable().then((available) => {
+        setIsSystemAudioSupported(available);
+      });
+    }
   }, []);
 
   const stopTimer = useCallback(() => {
@@ -129,13 +156,10 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     sourceNodeRef.current = null;
     analyserRef.current = null;
 
-    if (audioContextRef.current) {
-      void audioContextRef.current.close();
-      audioContextRef.current = null;
+    if (spectrumAudioContextRef.current) {
+      void spectrumAudioContextRef.current.close();
+      spectrumAudioContextRef.current = null;
     }
-
-    mixDestinationRef.current = null;
-    mixSourceNodesRef.current = [];
 
     setSpectrumLevels(Array.from({ length: SPECTRUM_BAR_COUNT }, () => 0));
   }, [SPECTRUM_BAR_COUNT]);
@@ -157,7 +181,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       analyser.smoothingTimeConstant = 0.8;
       source.connect(analyser);
 
-      audioContextRef.current = audioContext;
+      spectrumAudioContextRef.current = audioContext;
       analyserRef.current = analyser;
       sourceNodeRef.current = source;
 
@@ -202,6 +226,15 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       microphoneStreamRef.current.getTracks().forEach((track) => track.stop());
       microphoneStreamRef.current = null;
     }
+
+    mixSourceNodesRef.current.forEach((node) => node.disconnect());
+    mixSourceNodesRef.current = [];
+    mixDestinationRef.current = null;
+
+    if (mixAudioContextRef.current) {
+      void mixAudioContextRef.current.close();
+      mixAudioContextRef.current = null;
+    }
   }, [stopSpectrumMonitor]);
 
   const getMicrophoneStream = useCallback(async (): Promise<MediaStream> => {
@@ -223,38 +256,71 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       throw new Error("System audio capture is not supported in this browser/runtime.");
     }
 
-    const displayMediaOptions = {
-      video: {
-        frameRate: 30,
-      },
+    // Request screen share with system audio enabled.
+    // To capture system-wide audio in Chrome/Edge:
+    //   - systemAudio: "include" allows capturing audio from the entire system
+    //   - preferCurrentTab: false so user picks a screen/tab (not biased to current tab)
+    //   - video is required by getDisplayMedia but we only need audio
+    //   - The user MUST select "Share system audio" / "Share tab audio" in the picker
+    const displayMediaOptions: DisplayMediaStreamOptions & Record<string, unknown> = {
+      video: true,
       audio: {
         echoCancellation: false,
         noiseSuppression: false,
         autoGainControl: false,
         suppressLocalAudioPlayback: false,
-      },
+      } as MediaTrackConstraints,
       systemAudio: "include",
       selfBrowserSurface: "include",
-      preferCurrentTab: true,
+      preferCurrentTab: false,
       surfaceSwitching: "include",
-    } as MediaStreamConstraints & Record<string, unknown>;
+      monitorTypeSurfaces: "include",
+    };
+
+    console.log("[getSystemAudioStream] Requesting getDisplayMedia with system audio...");
 
     const displayStream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
     displayStreamRef.current = displayStream;
 
     const audioTracks = displayStream.getAudioTracks();
+    const videoTracks = displayStream.getVideoTracks();
+
+    console.log(
+      "[getSystemAudioStream] Got stream: audioTracks=%d, videoTracks=%d",
+      audioTracks.length,
+      videoTracks.length,
+    );
+
     if (audioTracks.length === 0) {
-      const videoTrack = displayStream.getVideoTracks()[0];
+      const videoTrack = videoTracks[0];
       const displaySurface = (videoTrack?.getSettings() as MediaTrackSettings & {
         displaySurface?: string;
       })?.displaySurface;
+
+      console.warn("[getSystemAudioStream] No audio tracks! displaySurface=%s", displaySurface);
+
       displayStream.getTracks().forEach((track) => track.stop());
       displayStreamRef.current = null;
       throw new Error(getSystemAudioUnavailableMessage(displaySurface));
     }
 
-    displayStream.getVideoTracks().forEach((track) => track.stop());
-    return new MediaStream(audioTracks);
+    // DO NOT stop video tracks here.
+    // In many browsers, stopping the video track from getDisplayMedia kills the
+    // entire capture session, including audio. We keep the displayStream alive
+    // in displayStreamRef and clean up everything in clearStream() when recording stops.
+    // The video track stays alive but consumes minimal resources.
+    const audioOnlyStream = new MediaStream(audioTracks);
+
+    // Monitor track health
+    audioTracks[0].onended = () => {
+      console.warn("[getSystemAudioStream] Audio track ENDED unexpectedly");
+    };
+
+    console.log("[getSystemAudioStream] Audio stream ready (keeping video track alive). Settings:",
+      audioTracks[0]?.getSettings(),
+    );
+
+    return audioOnlyStream;
   }, [isSystemAudioSupported]);
 
   const mixAudioStreams = useCallback(
@@ -272,7 +338,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       systemSource.connect(destination);
       micSource.connect(destination);
 
-      audioContextRef.current = audioContext;
+      mixAudioContextRef.current = audioContext;
       mixDestinationRef.current = destination;
       mixSourceNodesRef.current = [systemSource, micSource];
 
@@ -285,14 +351,68 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     chunksRef.current = [];
     setDurationSeconds(0);
     setAudioUrl((previous) => {
-      if (previous) {
-        URL.revokeObjectURL(previous);
-      }
+      revokeObjectUrlIfBlob(previous);
       return null;
     });
   }, []);
 
-  const stopRecording = useCallback(() => {
+  const startFakeSpectrum = useCallback(() => {
+    if (fakeSpectrumTimerRef.current !== null) return;
+    fakeSpectrumTimerRef.current = window.setInterval(() => {
+      setSpectrumLevels(
+        Array.from({ length: SPECTRUM_BAR_COUNT }, () => 0.1 + Math.random() * 0.6),
+      );
+    }, 100);
+  }, [SPECTRUM_BAR_COUNT]);
+
+  const stopFakeSpectrum = useCallback(() => {
+    if (fakeSpectrumTimerRef.current !== null) {
+      window.clearInterval(fakeSpectrumTimerRef.current);
+      fakeSpectrumTimerRef.current = null;
+    }
+    setSpectrumLevels(Array.from({ length: SPECTRUM_BAR_COUNT }, () => 0));
+  }, [SPECTRUM_BAR_COUNT]);
+
+  const stopRecording = useCallback(async () => {
+    stopTimer();
+    stopFakeSpectrum();
+
+    // Handle native system audio capture stop
+    console.log("[useAudioRecorder] stopRecording: nativeActive=%s, source=%s", nativeCaptureActiveRef.current, audioInputSource);
+    if (nativeCaptureActiveRef.current) {
+      try {
+        const wavFilePath = await stopNativeSystemAudioCapture();
+        console.log("[useAudioRecorder] Got WAV path:", wavFilePath);
+        nativeCaptureActiveRef.current = false;
+
+        // If there's also a MediaRecorder running (mixed mode), stop it too
+        const recorder = mediaRecorderRef.current;
+        if (recorder && recorder.state !== "inactive") {
+          recorder.stop();
+        }
+
+        // For pure system audio, use the data URL returned by Rust directly
+        if (audioInputSource === "system") {
+          console.log("[useAudioRecorder] Setting audio URL (data URL length=%d)", wavFilePath.length);
+          setAudioUrl((previous) => {
+            revokeObjectUrlIfBlob(previous);
+            return wavFilePath;
+          });
+        }
+        // For mixed mode, the MediaRecorder onstop handler sets the mic audio URL
+      } catch (error) {
+        nativeCaptureActiveRef.current = false;
+        setErrorMessage(
+          error instanceof Error ? error.message : "Failed to stop system audio capture.",
+        );
+      }
+
+      clearStream();
+      setStatus("stopped");
+      return;
+    }
+
+    // Standard browser path
     const recorder = mediaRecorderRef.current;
 
     if (!recorder) {
@@ -300,13 +420,15 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     }
 
     if (recorder.state !== "inactive") {
+      try {
+        recorder.requestData();
+      } catch {
+        // Some browsers can throw if requestData is called at an invalid time.
+      }
       recorder.stop();
     }
-
-    stopTimer();
-    clearStream();
     setStatus("stopped");
-  }, [clearStream, stopTimer]);
+  }, [audioInputSource, clearStream, stopFakeSpectrum, stopTimer]);
 
   const pauseRecording = useCallback(() => {
     const recorder = mediaRecorderRef.current;
@@ -391,7 +513,11 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
   }, [audioInputSource, getMicrophoneStream, getSystemAudioStream, mixAudioStreams]);
 
   const startRecording = useCallback(async () => {
-    if (!isSupported) {
+    console.log("[startRecording] CALLED. source=%s, isTauri=%s, isSupported=%s", audioInputSource, isTauriRuntime(), isSupported);
+    const isNativeSystemOnly = isTauriRuntime() && audioInputSource === "system";
+
+    if (!isSupported && !isNativeSystemOnly) {
+      console.error("[startRecording] Not supported, aborting");
       setStatus("error");
       setErrorMessage("Audio recording is not supported on this device/browser.");
       return;
@@ -410,10 +536,28 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       }
     }
 
+    // Native system audio capture path (Tauri desktop)
+    const useNativeSystemCapture = isTauriRuntime() && audioInputSource === "system";
+
     try {
       setErrorMessage(null);
       resetRecordingData();
 
+      console.log("[useAudioRecorder] startRecording: source=%s, useNative=%s, isTauri=%s", audioInputSource, useNativeSystemCapture, isTauriRuntime());
+
+      if (useNativeSystemCapture && audioInputSource === "system") {
+        // Pure system audio: use native Rust capture only
+        console.log("[useAudioRecorder] Starting native system audio capture...");
+        await startNativeSystemAudioCapture();
+        nativeCaptureActiveRef.current = true;
+        setStatus("recording");
+        setDurationSeconds(0);
+        startTimer();
+        startFakeSpectrum();
+        return;
+      }
+
+      // Standard browser path
       const stream = await getAudioStream();
       startSpectrumMonitor(stream);
 
@@ -438,14 +582,19 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       };
 
       recorder.onstop = () => {
+        if (chunksRef.current.length === 0) {
+          setStatus("error");
+          setErrorMessage("No audio data was captured. Verify permissions and selected audio source.");
+          clearStream();
+          return;
+        }
+
         const actualMimeType = recorder.mimeType || mimeType || "audio/webm";
         const blob = new Blob(chunksRef.current, { type: actualMimeType });
         const url = URL.createObjectURL(blob);
 
         setAudioUrl((previous) => {
-          if (previous) {
-            URL.revokeObjectURL(previous);
-          }
+          revokeObjectUrlIfBlob(previous);
           return url;
         });
 
@@ -454,20 +603,31 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
 
       recorder.onerror = () => {
         setStatus("error");
-        setErrorMessage("Failed to capture audio. Please check microphone permissions.");
+        setErrorMessage(
+          audioInputSource === "system"
+            ? "Failed to capture system audio. The shared screen/tab may have been closed."
+            : "Failed to capture audio. Please check microphone permissions.",
+        );
         stopTimer();
         clearStream();
       };
 
-      recorder.start();
+      recorder.start(1000);
+      console.log("[startRecording] MediaRecorder started with 1s timeslice, mimeType=%s", recorder.mimeType);
       setStatus("recording");
       setDurationSeconds(0);
       startTimer();
     } catch (error) {
+      console.error("[startRecording] CATCH error:", error);
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : getPermissionErrorMessage(error));
       stopTimer();
+      stopFakeSpectrum();
       clearStream();
+      if (nativeCaptureActiveRef.current) {
+        stopNativeSystemAudioCapture().catch(() => {});
+        nativeCaptureActiveRef.current = false;
+      }
     }
   }, [
     audioInputSource,
@@ -479,7 +639,10 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     refreshAvailableMicrophones,
     requestMicrophonePermission,
     resetRecordingData,
+    startFakeSpectrum,
+    startSpectrumMonitor,
     startTimer,
+    stopFakeSpectrum,
     stopTimer,
   ]);
 
@@ -578,7 +741,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       clearStream();
       stopSpectrumMonitor();
       if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
+        revokeObjectUrlIfBlob(audioUrl);
       }
     };
   }, [audioUrl, clearStream, stopSpectrumMonitor, stopTimer]);
