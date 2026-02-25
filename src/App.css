@@ -104,7 +104,14 @@ body {
 }
 
 :root[data-tauri="true"] .neo-app-container {
+  min-height: calc(100vh - var(--neo-titlebar-height, 0px));
   padding-top: var(--neo-titlebar-height, 0px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+:root[data-tauri="true"] .neo-app-shell {
+  min-height: calc(100vh - var(--neo-titlebar-height, 0px));
 }
 
 .neo-titlebar-back {

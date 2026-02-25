@@ -42,9 +42,15 @@ interface TitleBarProps {
 
 export function TitleBar({ title, backgroundColor, leftAction }: TitleBarProps) {
   const appWindow = useMemo(() => getAppWindow(), []);
+  const resolvedTitle = title ?? "RECOGNI";
+  const isHomeTitle = !title || resolvedTitle === "RECOGNI";
   const style = useMemo<CSSProperties | undefined>(
-    () => (backgroundColor ? ({ "--neo-titlebar-bg": backgroundColor } as CSSProperties) : undefined),
-    [backgroundColor]
+    () =>
+      ({
+        "--neo-titlebar-bg": backgroundColor,
+        "--neo-titlebar-fg": isHomeTitle ? "#ffffff" : "#000000",
+      } as CSSProperties),
+    [backgroundColor, isHomeTitle]
   );
 
   const handleMinimize = useCallback(async () => {
@@ -73,7 +79,7 @@ export function TitleBar({ title, backgroundColor, leftAction }: TitleBarProps) 
             <div className="neo-titlebar-left-action">{leftAction}</div>
           ) : null}
           <span className="neo-titlebar-appname" data-tauri-drag-region>
-            {title ?? "RECOGNI"}
+            {resolvedTitle}
           </span>
         </div>
       </div>
