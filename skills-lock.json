@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "skills": {
+    "adding-tauri-system-tray": {
+      "source": "dchuk/claude-code-tauri-skills",
+      "sourceType": "github",
+      "computedHash": "d79fd615d20a7357208a39527d1f00ae63091bf905a0da316abeaf9cefa5f619"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "516bd2154eb843a8240e43d5b285229129853114ad7075a5e141e1c08e408c84"
+    },
+    "react-doctor": {
+      "source": "millionco/react-doctor",
+      "sourceType": "github",
+      "computedHash": "276053f3861a6f29e2ab1922fc91281934dac5be78f85ec9f21604fd979383ee"
+    },
+    "rust-async-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "7da2b320a51fa7da0b78138132d814e4c9ee078617f7ead6e0e04ffb9e769cc8"
+    },
+    "rust-best-practices": {
+      "source": "apollographql/skills",
+      "sourceType": "github",
+      "computedHash": "3d80db37cef0198fe21f6f10363bbe0a7cb3f36afab49d0f3270fad4abc2a6d9"
+    },
+    "tauri-event-system": {
+      "source": "bobmatnyc/claude-mpm-skills",
+      "sourceType": "github",
+      "computedHash": "b1b6a2afe6e1ea2366b28311f3f837fb1728f8e991df245a0465ce24623e5b1f"
+    },
+    "tauri-v2": {
+      "source": "nodnarbnitram/claude-code-extensions",
+      "sourceType": "github",
+      "computedHash": "a333d119fa97f6a4c72d7f5a0e7c44c1c614254b8d67383f83ff23ac1af2afb0"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "computedHash": "ce9a142b3a21d617c556bd4c3f78ae5877829b48aac5525dac0a83418870d673"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "61f8c307aa8ce0c4c52da8886d42e344dab83f76f9b5360cf8923b25fb1d67bb"
+    }
+  }
+}
