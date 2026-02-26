@@ -86,8 +86,7 @@ export function useWhisperTranscription(
   const workerRef = useRef<Worker | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const processorRef = useRef<ScriptProcessorNode | null>(null);
-  const silentGainRef = useRef<GainNode | null>(null);
+  const workletNodeRef = useRef<AudioWorkletNode | null>(null);
   const audioBufferRef = useRef<Float32Array[]>([]);
   const chunkTimerRef = useRef<number | null>(null);
   const modelReadyRef = useRef(false);
@@ -189,10 +188,9 @@ export function useWhisperTranscription(
     worker.postMessage({ type: "transcribe", audio: merged, language, context: lastContextRef.current });
   }, [getWorker, language]);
 
-  const startCapture = useCallback((mediaStream: MediaStream) => {
+  const startCapture = useCallback(async (mediaStream: MediaStream) => {
     // Clean up any existing capture
-    processorRef.current?.disconnect();
-    silentGainRef.current?.disconnect();
+    workletNodeRef.current?.disconnect();
     sourceNodeRef.current?.disconnect();
     if (audioCtxRef.current) {
       void audioCtxRef.current.close();
@@ -201,25 +199,39 @@ export function useWhisperTranscription(
     const audioCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
     const source = audioCtx.createMediaStreamSource(mediaStream);
 
-    // ScriptProcessorNode for capturing raw PCM data
-    // bufferSize=4096 at 16kHz ≈ 256ms per callback
-    const processor = audioCtx.createScriptProcessor(4096, 1, 1);
-    const silentGain = audioCtx.createGain();
-    silentGain.gain.value = 0;
+    // AudioWorkletNode replaces deprecated ScriptProcessorNode
+    // Inline the processor code as a Blob URL to avoid separate file management
+    const processorCode = `
+      class PcmCaptureProcessor extends AudioWorkletProcessor {
+        process(inputs) {
+          const input = inputs[0];
+          if (input && input[0] && input[0].length > 0) {
+            this.port.postMessage(new Float32Array(input[0]));
+          }
+          return true;
+        }
+      }
+      registerProcessor("pcm-capture-processor", PcmCaptureProcessor);
+    `;
+    const blob = new Blob([processorCode], { type: "application/javascript" });
+    const workletUrl = URL.createObjectURL(blob);
 
-    processor.onaudioprocess = (e: AudioProcessingEvent) => {
-      const inputData = e.inputBuffer.getChannelData(0);
-      audioBufferRef.current.push(new Float32Array(inputData));
+    try {
+      await audioCtx.audioWorklet.addModule(workletUrl);
+    } finally {
+      URL.revokeObjectURL(workletUrl);
+    }
+
+    const workletNode = new AudioWorkletNode(audioCtx, "pcm-capture-processor");
+    workletNode.port.onmessage = (e: MessageEvent<Float32Array>) => {
+      audioBufferRef.current.push(e.data);
     };
 
-    source.connect(processor);
-    processor.connect(silentGain);
-    silentGain.connect(audioCtx.destination);
+    source.connect(workletNode);
 
     audioCtxRef.current = audioCtx;
     sourceNodeRef.current = source;
-    processorRef.current = processor;
-    silentGainRef.current = silentGain;
+    workletNodeRef.current = workletNode;
 
     // Send chunks to the worker periodically
     chunkTimerRef.current = window.setInterval(sendChunk, CHUNK_DURATION_S * 1000);
@@ -236,11 +248,9 @@ export function useWhisperTranscription(
     // Send any remaining audio
     sendChunk();
 
-    processorRef.current?.disconnect();
-    silentGainRef.current?.disconnect();
+    workletNodeRef.current?.disconnect();
     sourceNodeRef.current?.disconnect();
-    processorRef.current = null;
-    silentGainRef.current = null;
+    workletNodeRef.current = null;
     sourceNodeRef.current = null;
 
     if (audioCtxRef.current) {

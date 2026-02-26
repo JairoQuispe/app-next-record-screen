@@ -1,10 +1,11 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { MicIcon, MonitorIcon, CheckIcon } from "@shared/ui/icons";
 import { formatDuration } from "@shared/lib/utils";
 import { isTauriRuntime } from "@shared/lib/runtime/isTauriRuntime";
 import { useMicrophonePreview } from "../model/useMicrophonePreview";
 import { useWhisperTranscription } from "../model/useWhisperTranscription";
-import type { AudioRecorderState, AudioRecorderActions } from "../model/types";
+import { useSpeakerDiarization } from "../model/useSpeakerDiarization";
+import type { AudioRecorderState, AudioRecorderActions, SpeakerSegment, SpeakerStats, ParticipantSummary } from "../model/types";
 
 interface SetupScreenProps {
   state: Pick<
@@ -126,6 +127,108 @@ function VisualizerBars({ levels }: { levels: number[] }) {
   );
 }
 
+type TranscriptionTab = "live" | "speakers" | "summary";
+
+function formatMs(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function SpeakerSegmentList({ segments }: { segments: SpeakerSegment[] }) {
+  if (segments.length === 0) {
+    return <p className="neo-diarize-empty">No se detectaron segmentos de hablantes.</p>;
+  }
+
+  const speakerColors: Record<string, string> = {};
+  const palette = ["#FF40A0", "#39FF14", "#FDC500", "#A37DFF", "#19c4ae"];
+  let colorIdx = 0;
+
+  return (
+    <div className="neo-diarize-segments">
+      {segments.map((seg) => {
+        if (!speakerColors[seg.speakerId]) {
+          speakerColors[seg.speakerId] = palette[colorIdx % palette.length];
+          colorIdx++;
+        }
+        const color = speakerColors[seg.speakerId];
+        return (
+          <div key={seg.id} className="neo-diarize-segment">
+            <div className="neo-diarize-segment-header">
+              <span className="neo-diarize-speaker-badge" style={{ borderColor: color, color }}>
+                {seg.speakerId}
+              </span>
+              <span className="neo-diarize-time">{formatMs(seg.startMs)} — {formatMs(seg.endMs)}</span>
+            </div>
+            {seg.text && <p className="neo-diarize-segment-text">{seg.text}</p>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SpeakerStatsPanel({ stats }: { stats: SpeakerStats[] }) {
+  if (stats.length === 0) return null;
+  return (
+    <div className="neo-diarize-stats">
+      {stats.map((s) => (
+        <div key={s.speakerId} className="neo-diarize-stat-card">
+          <span className="neo-diarize-stat-speaker">{s.speakerId}</span>
+          <div className="neo-diarize-stat-metrics">
+            <span className="neo-diarize-stat-item">
+              <strong>{formatMs(s.talkTimeMs)}</strong> tiempo
+            </span>
+            <span className="neo-diarize-stat-item">
+              <strong>{s.turns}</strong> turnos
+            </span>
+            <span className="neo-diarize-stat-item">
+              <strong>{s.wordCount}</strong> palabras
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ParticipantSummaryPanel({ summaries, stats }: { summaries: ParticipantSummary[]; stats: SpeakerStats[] }) {
+  if (summaries.length === 0) {
+    return <p className="neo-diarize-empty">No hay resumen disponible.</p>;
+  }
+  return (
+    <div className="neo-diarize-summaries">
+      {summaries.map((s) => {
+        const speakerStat = stats.find((st) => st.speakerId === s.speakerId);
+        return (
+          <div key={s.speakerId} className="neo-diarize-summary-card">
+            <div className="neo-diarize-summary-header">
+              <span className="neo-diarize-summary-speaker">{s.speakerId}</span>
+              {speakerStat && (
+                <span className="neo-diarize-summary-time">{formatMs(speakerStat.talkTimeMs)}</span>
+              )}
+            </div>
+            {s.headline && <p className="neo-diarize-summary-headline">{s.headline}</p>}
+            {s.bulletPoints.length > 0 && (
+              <ul className="neo-diarize-summary-bullets">
+                {s.bulletPoints.map((bp, i) => <li key={i}>{bp}</li>)}
+              </ul>
+            )}
+            {s.keywords.length > 0 && (
+              <div className="neo-diarize-summary-keywords">
+                {s.keywords.map((kw) => (
+                  <span key={kw} className="neo-diarize-keyword">{kw}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
   const {
     isSupported,
@@ -153,6 +256,8 @@ export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
     saveRecording,
   } = actions;
 
+  const [activeTab, setActiveTab] = useState<TranscriptionTab>("live");
+
   const isMicChecked = audioInputSource === "microphone" || audioInputSource === "mixed";
   const isSystemChecked = audioInputSource === "system" || audioInputSource === "mixed";
   const usesMicrophone = audioInputSource === "microphone" || audioInputSource === "mixed";
@@ -178,6 +283,19 @@ export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
   const vizActive = isBusy || isMicPreviewActive;
 
   const transcription = useWhisperTranscription(isBusy, recordingStream, "es");
+  const diarization = useSpeakerDiarization("es");
+  const prevStatusRef = useRef(status);
+
+  // Auto-trigger diarization when recording stops and audio is available
+  useEffect(() => {
+    if (prevStatusRef.current === "recording" || prevStatusRef.current === "paused") {
+      if (status === "stopped" && audioUrl) {
+        diarization.startDiarization(audioUrl);
+        setActiveTab("speakers");
+      }
+    }
+    prevStatusRef.current = status;
+  }, [status, audioUrl]);
 
   const toggleMicrophoneSource = () => {
     if (isBusy) return;
@@ -235,35 +353,129 @@ export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
           <VisualizerBars levels={vizLevels} />
         </div>
 
-        {(isBusy || transcription.finalText) && (
-          <div className="neo-transcription-panel" role="log" aria-live="polite" aria-label="Transcripción en vivo">
+        {(isBusy || transcription.finalText || diarization.status !== "idle") && (
+          <div className="neo-transcription-panel" role="log" aria-live="polite" aria-label="Transcripción">
             <div className="neo-transcription-header">
-              <span className="neo-transcription-title">TRANSCRIPCIÓN EN VIVO</span>
-              {(transcription.isModelReady && isBusy) && <span className="neo-transcription-dot" aria-hidden="true" />}
-              {transcription.isModelLoading && (
-                <span className="neo-transcription-progress">Cargando modelo ({transcription.loadProgress}%)</span>
-              )}
-              {transcription.finalText && (
-                <button type="button" className="neo-transcription-clear" onClick={transcription.clear}>
-                  LIMPIAR
+              <div className="neo-transcription-tabs" role="tablist">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === "live"}
+                  className={`neo-transcription-tab ${activeTab === "live" ? "is-active" : ""}`}
+                  onClick={() => setActiveTab("live")}
+                >
+                  EN VIVO
                 </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === "speakers"}
+                  className={`neo-transcription-tab ${activeTab === "speakers" ? "is-active" : ""}`}
+                  onClick={() => setActiveTab("speakers")}
+                >
+                  HABLANTES
+                  {diarization.status === "processing" && (
+                    <span className="neo-tab-badge">{diarization.progress}%</span>
+                  )}
+                  {diarization.status === "done" && (
+                    <span className="neo-tab-badge neo-tab-badge--done">{diarization.segments.length}</span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === "summary"}
+                  className={`neo-transcription-tab ${activeTab === "summary" ? "is-active" : ""}`}
+                  onClick={() => setActiveTab("summary")}
+                >
+                  RESUMEN
+                </button>
+              </div>
+              {activeTab === "live" && (
+                <>
+                  {(transcription.isModelReady && isBusy) && <span className="neo-transcription-dot" aria-hidden="true" />}
+                  {transcription.isModelLoading && (
+                    <span className="neo-transcription-progress">Cargando modelo ({transcription.loadProgress}%)</span>
+                  )}
+                  {transcription.finalText && (
+                    <button type="button" className="neo-transcription-clear" onClick={transcription.clear}>
+                      LIMPIAR
+                    </button>
+                  )}
+                </>
               )}
             </div>
-            <div className="neo-transcription-body">
-              {transcription.finalText && (
-                <p className="neo-transcription-final">{transcription.finalText}</p>
-              )}
-              {transcription.interimText && (
-                <p className="neo-transcription-interim">{transcription.interimText}</p>
-              )}
-              {!transcription.finalText && !transcription.interimText && !transcription.isModelLoading && (
-                <p className="neo-transcription-placeholder">
-                  {transcription.isProcessing ? "Transcribiendo..." : "Esperando audio..."}
-                </p>
-              )}
-            </div>
-            {transcription.error && (
-              <p className="neo-transcription-error">{transcription.error}</p>
+
+            {activeTab === "live" && (
+              <div className="neo-transcription-body">
+                {transcription.finalText && (
+                  <p className="neo-transcription-final">{transcription.finalText}</p>
+                )}
+                {transcription.interimText && (
+                  <p className="neo-transcription-interim">{transcription.interimText}</p>
+                )}
+                {!transcription.finalText && !transcription.interimText && !transcription.isModelLoading && (
+                  <p className="neo-transcription-placeholder">
+                    {transcription.isProcessing ? "Transcribiendo..." : "Esperando audio..."}
+                  </p>
+                )}
+                {transcription.error && (
+                  <p className="neo-transcription-error">{transcription.error}</p>
+                )}
+              </div>
+            )}
+
+            {activeTab === "speakers" && (
+              <div className="neo-transcription-body neo-transcription-body--tall">
+                {diarization.status === "processing" && (
+                  <div className="neo-diarize-progress">
+                    <div className="neo-diarize-progress-bar">
+                      <div className="neo-diarize-progress-fill" style={{ width: `${diarization.progress}%` }} />
+                    </div>
+                    <span className="neo-diarize-progress-label">
+                      {diarization.stage === "extracting-features" && "Extrayendo características de audio..."}
+                      {diarization.stage === "clustering" && "Identificando hablantes..."}
+                      {diarization.stage === "loading-model" && "Cargando modelo de transcripción..."}
+                      {diarization.stage === "transcribing" && "Transcribiendo segmentos..."}
+                      {diarization.stage === "summarizing" && "Generando resumen..."}
+                      {!diarization.stage && "Procesando..."}
+                    </span>
+                  </div>
+                )}
+                {diarization.status === "done" && (
+                  <>
+                    <SpeakerStatsPanel stats={diarization.speakerStats} />
+                    <SpeakerSegmentList segments={diarization.segments} />
+                  </>
+                )}
+                {diarization.status === "error" && (
+                  <p className="neo-transcription-error">{diarization.error}</p>
+                )}
+                {diarization.status === "idle" && (
+                  <p className="neo-diarize-empty">
+                    La diarización se ejecutará automáticamente al detener la grabación.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {activeTab === "summary" && (
+              <div className="neo-transcription-body neo-transcription-body--tall">
+                {diarization.status === "done" && (
+                  <ParticipantSummaryPanel
+                    summaries={diarization.participantSummaries}
+                    stats={diarization.speakerStats}
+                  />
+                )}
+                {diarization.status === "processing" && (
+                  <p className="neo-diarize-empty">Procesando diarización ({diarization.progress}%)...</p>
+                )}
+                {(diarization.status === "idle" || diarization.status === "error") && (
+                  <p className="neo-diarize-empty">
+                    {diarization.status === "error" ? diarization.error : "El resumen estará disponible tras la diarización."}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         )}

@@ -3,6 +3,41 @@ export type AudioInputSource = "microphone" | "system" | "mixed";
 
 export type MicrophonePermissionStatus = PermissionState | "unknown" | "unsupported";
 
+export interface SpeakerSegment {
+  id: string;
+  speakerId: string;
+  startMs: number;
+  endMs: number;
+  text: string;
+  confidence?: number;
+}
+
+export interface SpeakerStats {
+  speakerId: string;
+  talkTimeMs: number;
+  turns: number;
+  wordCount: number;
+}
+
+export interface ParticipantSummary {
+  speakerId: string;
+  headline: string;
+  bulletPoints: string[];
+  keywords: string[];
+}
+
+export type DiarizationStatus = "idle" | "processing" | "done" | "error";
+
+export interface DiarizationState {
+  status: DiarizationStatus;
+  progress: number;
+  stage: string;
+  segments: SpeakerSegment[];
+  speakerStats: SpeakerStats[];
+  participantSummaries: ParticipantSummary[];
+  error: string | null;
+}
+
 export interface MicrophoneDeviceOption {
   deviceId: string;
   label: string;
