@@ -1,17 +1,12 @@
-import { useCallback, useMemo, type CSSProperties, type ReactNode } from "react";
-import { isTauriRuntime } from "@shared/lib/runtime";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { isTauriRuntime } from "@shared/lib/runtime/isTauriRuntime";
 import "./TitleBar.css";
 
-function getAppWindow() {
-  if (!isTauriRuntime()) return null;
-
-  try {
-    const { getCurrentWindow } = require("@tauri-apps/api/window") as typeof import("@tauri-apps/api/window");
-    return getCurrentWindow();
-  } catch {
-    return null;
-  }
-}
+type WindowControls = {
+  minimize(): Promise<void>;
+  toggleMaximize(): Promise<void>;
+  close(): Promise<void>;
+};
 
 const minimizeIcon = (
   <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
@@ -41,7 +36,28 @@ interface TitleBarProps {
 }
 
 export function TitleBar({ title, backgroundColor, leftAction }: TitleBarProps) {
-  const appWindow = useMemo(() => getAppWindow(), []);
+  const [appWindow, setAppWindow] = useState<WindowControls | null>(null);
+
+  useEffect(() => {
+    if (!isTauriRuntime()) return;
+
+    let mounted = true;
+
+    (async () => {
+      try {
+        const { getCurrentWindow } = await import("@tauri-apps/api/window");
+        if (mounted) {
+          setAppWindow(getCurrentWindow());
+        }
+      } catch (error) {
+        console.error("[TitleBar] Failed to load Tauri window API", error);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
   const resolvedTitle = title ?? "RECOGNI";
   const isHomeTitle = !title || resolvedTitle === "RECOGNI";
   const style = useMemo<CSSProperties | undefined>(

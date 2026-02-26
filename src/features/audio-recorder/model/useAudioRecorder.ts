@@ -13,6 +13,7 @@ import {
   stopNativeSystemAudioCapture,
   isNativeSystemAudioAvailable,
   convertFilePathToUrl,
+  listenToAudioLevels,
 } from "@shared/lib/runtime/tauriAudioCapture";
 import { SPECTRUM_BAR_COUNT, SPECTRUM_ZERO_LEVELS, CANDIDATE_MIME_TYPES } from "../lib/constants";
 
@@ -106,6 +107,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
   const mixDestinationRef = useRef<MediaStreamAudioDestinationNode | null>(null);
   const mixSourceNodesRef = useRef<MediaStreamAudioSourceNode[]>([]);
   const nativeCaptureActiveRef = useRef(false);
+  const nativeUnlistenRef = useRef<(() => void) | null>(null);
   const fakeSpectrumTimerRef = useRef<number | null>(null);
 
   const isSupported = IS_MEDIA_SUPPORTED;
@@ -354,16 +356,29 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     });
   }, []);
 
-  const startFakeSpectrum = useCallback(() => {
-    if (fakeSpectrumTimerRef.current !== null) return;
-    fakeSpectrumTimerRef.current = window.setInterval(() => {
-      setSpectrumLevels(
-        Array.from({ length: SPECTRUM_BAR_COUNT }, () => 0.1 + Math.random() * 0.6),
-      );
-    }, 200);
+  const startNativeSpectrum = useCallback(() => {
+    if (nativeUnlistenRef.current) return;
+    listenToAudioLevels((level) => {
+      // Spread a single RMS level into SPECTRUM_BAR_COUNT bars with
+      // a natural-looking bell-curve distribution centred on the middle.
+      const mid = (SPECTRUM_BAR_COUNT - 1) / 2;
+      const nextLevels: number[] = new Array(SPECTRUM_BAR_COUNT);
+      for (let i = 0; i < SPECTRUM_BAR_COUNT; i++) {
+        const dist = Math.abs(i - mid) / mid; // 0 at centre, 1 at edges
+        const scale = 1.0 - dist * 0.6; // edges are 60 % quieter
+        nextLevels[i] = Math.min(1, level * scale * (0.85 + Math.random() * 0.3));
+      }
+      setSpectrumLevels(nextLevels);
+    }).then((unlisten) => {
+      nativeUnlistenRef.current = unlisten;
+    });
   }, []);
 
-  const stopFakeSpectrum = useCallback(() => {
+  const stopNativeSpectrum = useCallback(() => {
+    if (nativeUnlistenRef.current) {
+      nativeUnlistenRef.current();
+      nativeUnlistenRef.current = null;
+    }
     if (fakeSpectrumTimerRef.current !== null) {
       window.clearInterval(fakeSpectrumTimerRef.current);
       fakeSpectrumTimerRef.current = null;
@@ -373,7 +388,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
 
   const stopRecording = useCallback(async () => {
     stopTimer();
-    stopFakeSpectrum();
+    stopNativeSpectrum();
 
     // Handle native system audio capture stop
     console.log("[useAudioRecorder] stopRecording: nativeActive=%s, source=%s", nativeCaptureActiveRef.current, audioInputSource);
@@ -429,7 +444,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       recorder.stop();
     }
     setStatus("stopped");
-  }, [audioInputSource, clearStream, stopFakeSpectrum, stopTimer]);
+  }, [audioInputSource, clearStream, stopNativeSpectrum, stopTimer]);
 
   const pauseRecording = useCallback(() => {
     const recorder = mediaRecorderRef.current;
@@ -608,7 +623,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
         setStatus("recording");
         setDurationSeconds(0);
         startTimer();
-        startFakeSpectrum();
+        startNativeSpectrum();
         return;
       }
 
@@ -682,7 +697,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : getPermissionErrorMessage(error));
       stopTimer();
-      stopFakeSpectrum();
+      stopNativeSpectrum();
       clearStream();
       if (nativeCaptureActiveRef.current) {
         stopNativeSystemAudioCapture().catch(() => {});
@@ -699,10 +714,10 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     refreshAvailableMicrophones,
     requestMicrophonePermission,
     resetRecordingData,
-    startFakeSpectrum,
+    startNativeSpectrum,
     startSpectrumMonitor,
     startTimer,
-    stopFakeSpectrum,
+    stopNativeSpectrum,
     stopTimer,
   ]);
 
@@ -800,11 +815,12 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       stopTimer();
       clearStream();
       stopSpectrumMonitor();
+      stopNativeSpectrum();
       if (audioUrl) {
         revokeObjectUrlIfBlob(audioUrl);
       }
     };
-  }, [audioUrl, clearStream, stopSpectrumMonitor, stopTimer]);
+  }, [audioUrl, clearStream, stopNativeSpectrum, stopSpectrumMonitor, stopTimer]);
 
   return {
     status,

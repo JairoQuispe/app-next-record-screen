@@ -25,11 +25,12 @@
       "assetProtocol": {
         "enable": true,
         "scope": {
-          "allow": ["**"],
+          "allow": ["$TEMP/**", "$HOME/**", "$DESKTOP/**", "$DOWNLOAD/**", "$DOCUMENT/**"],
           "deny": []
         }
       }
-    }
+    },
+    "withGlobalTauri": true
   },
   "bundle": {
     "active": true,
