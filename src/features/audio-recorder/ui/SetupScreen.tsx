@@ -74,19 +74,17 @@ export function SetupScreen({ state, actions, animateIn, onContinue }: SetupScre
   };
 
   return (
-    <main className={`neo-app-shell neo-animate-enter ${animateIn ? 'is-visible' : ''}`}>
-      <div className="neo-setup-card" role="region" aria-label="Audio Setup">
-        <header className="neo-setup-header">
-          <h2 className="neo-setup-title">CONFIGURACIÓN DE AUDIO</h2>
-          <div className="neo-setup-badge">PASO 1/1</div>
-        </header>
+    <main className={`neo-app-shell neo-app-shell--setup neo-animate-enter ${animateIn ? 'is-visible' : ''}`}>
+      <div className="neo-setup-layout">
         
+        <div className="neo-setup-card" role="region" aria-label="Audio Setup">
+          <div className="neo-setup-section-title">Seleccionar fuente de audio</div>
+
         <div className="neo-setup-content">
           {!isSupported && <div className="neo-error" role="alert">Tu dispositivo no soporta grabación de audio.</div>}
           {errorMessage && <div className="neo-error" role="alert">{errorMessage}</div>}
 
-          <section className="neo-setup-section" aria-labelledby="source-selection-title">
-            <h3 id="source-selection-title" className="neo-setup-label">SELECCIONA LA FUENTE DE AUDIO</h3>
+          <section className="neo-setup-section" aria-label="Audio sources">
             <div className="neo-source-options" aria-label="Audio sources">
               <button 
                 type="button"
@@ -180,6 +178,7 @@ export function SetupScreen({ state, actions, animateIn, onContinue }: SetupScre
             CONTINUAR A GRABACIÓN →
           </button>
         </footer>
+        </div>
       </div>
     </main>
   );

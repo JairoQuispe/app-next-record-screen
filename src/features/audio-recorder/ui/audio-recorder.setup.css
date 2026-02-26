@@ -1,12 +1,39 @@
 /* Setup screen (reference style) */
+.neo-app-shell--setup {
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.neo-setup-layout {
+  width: 100%;
+  max-width: 760px;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.neo-setup-section-title {
+  margin: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.2rem;
+  color: #ffffff;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .neo-setup-card {
   width: 100%;
   max-width: 760px;
   background: #2a2633;
   border: 4px solid var(--neo-black);
   box-shadow: 10px 10px 0 var(--neo-black);
-  padding: 1.4rem;
+  padding: 2rem;
   color: #ffffff;
+
 }
 
 .neo-setup-header {
@@ -37,14 +64,14 @@
 
 .neo-setup-content {
   border-top: 4px solid var(--neo-black);
-  padding-top: 1rem;
+  padding-top: 1.5rem;
   display: grid;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .neo-setup-section {
   display: grid;
-  gap: 0.8rem;
+  gap: 1.2rem;
 }
 
 .neo-setup-label {
@@ -58,6 +85,7 @@
 
 .neo-source-options {
   display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 0.9rem;
 }
 
@@ -215,7 +243,7 @@
 }
 
 .neo-setup-footer {
-  margin-top: 1rem;
+  margin-top: 2rem;
 }
 
 .neo-setup-start {
