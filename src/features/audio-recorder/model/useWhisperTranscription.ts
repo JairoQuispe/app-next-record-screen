@@ -21,6 +21,7 @@ const MIN_CHUNK_S = 0.75;
 
 const CHUNK_OVERLAP_SAMPLES = Math.floor(CHUNK_OVERLAP_S * SAMPLE_RATE);
 const MIN_CHUNK_SAMPLES = Math.floor(MIN_CHUNK_S * SAMPLE_RATE);
+const VAD_PREFILTER_RMS = 0.008;
 
 function normalizeSegment(text: string): string {
   return text.replace(/\s+/g, " ").trim();
@@ -91,6 +92,7 @@ export function useWhisperTranscription(
   const chunkTimerRef = useRef<number | null>(null);
   const modelReadyRef = useRef(false);
   const isChunkInFlightRef = useRef(false);
+  const lastContextRef = useRef("");
 
   const getWorker = useCallback(() => {
     if (workerRef.current) return workerRef.current;
@@ -120,7 +122,11 @@ export function useWhisperTranscription(
           isChunkInFlightRef.current = false;
           if (data.text && data.text.trim()) {
             setInterimText("");
-            setFinalText((prev) => mergeWithLastSegment(prev, data.text ?? ""));
+            setFinalText((prev) => {
+              const next = mergeWithLastSegment(prev, data.text ?? "");
+              lastContextRef.current = next.split("\n").slice(-3).join(" ");
+              return next;
+            });
           }
           break;
         case "error":
@@ -152,6 +158,23 @@ export function useWhisperTranscription(
       offset += chunk.length;
     }
 
+    // Quick energy pre-filter — skip obviously silent chunks
+    let sumSq = 0;
+    const step = 16;
+    for (let i = 0; i < merged.length; i += step) {
+      sumSq += merged[i] * merged[i];
+    }
+    const rms = Math.sqrt(sumSq / Math.ceil(merged.length / step));
+
+    if (rms < VAD_PREFILTER_RMS) {
+      if (CHUNK_OVERLAP_SAMPLES > 0 && merged.length > CHUNK_OVERLAP_SAMPLES) {
+        audioBufferRef.current = [merged.slice(merged.length - CHUNK_OVERLAP_SAMPLES)];
+      } else {
+        audioBufferRef.current = [];
+      }
+      return;
+    }
+
     if (CHUNK_OVERLAP_SAMPLES > 0 && merged.length > CHUNK_OVERLAP_SAMPLES) {
       audioBufferRef.current = [merged.slice(merged.length - CHUNK_OVERLAP_SAMPLES)];
     } else {
@@ -163,7 +186,7 @@ export function useWhisperTranscription(
     isChunkInFlightRef.current = true;
 
     const worker = getWorker();
-    worker.postMessage({ type: "transcribe", audio: merged, language });
+    worker.postMessage({ type: "transcribe", audio: merged, language, context: lastContextRef.current });
   }, [getWorker, language]);
 
   const startCapture = useCallback((mediaStream: MediaStream) => {
@@ -227,6 +250,7 @@ export function useWhisperTranscription(
 
     audioBufferRef.current = [];
     isChunkInFlightRef.current = false;
+    lastContextRef.current = "";
     setInterimText("");
   }, [sendChunk]);
 
@@ -234,6 +258,7 @@ export function useWhisperTranscription(
     setFinalText("");
     setInterimText("");
     setError(null);
+    lastContextRef.current = "";
   }, []);
 
   // Lifecycle: load model + start/stop capture based on enabled & stream
