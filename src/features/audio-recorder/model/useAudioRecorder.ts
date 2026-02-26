@@ -86,6 +86,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
   const [spectrumLevels, setSpectrumLevels] = useState<number[]>(
     () => SPECTRUM_ZERO_LEVELS,
   );
+  const [recordingStream, setRecordingStream] = useState<MediaStream | null>(null);
 
   const streamRef = useRef<MediaStream | null>(null);
   const displayStreamRef = useRef<MediaStream | null>(null);
@@ -204,6 +205,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
 
   const clearStream = useCallback(() => {
     stopSpectrumMonitor();
+    setRecordingStream(null);
 
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
@@ -625,6 +627,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
         : new MediaRecorder(stream);
 
       streamRef.current = stream;
+      setRecordingStream(stream);
       mediaRecorderRef.current = recorder;
       chunksRef.current = [];
 
@@ -665,6 +668,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
             : "Failed to capture audio. Please check microphone permissions.",
         );
         stopTimer();
+        setRecordingStream(null);
         clearStream();
       };
 
@@ -815,6 +819,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     selectedMicrophoneId,
     audioInputSource,
     spectrumLevels,
+    recordingStream,
     startRecording,
     stopRecording,
     pauseRecording,

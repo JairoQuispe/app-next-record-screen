@@ -2,6 +2,7 @@ import { MicIcon, MonitorIcon, CheckIcon } from "@shared/ui/icons";
 import { formatDuration } from "@shared/lib/utils";
 import { isTauriRuntime } from "@shared/lib/runtime/isTauriRuntime";
 import { useMicrophonePreview } from "../model/useMicrophonePreview";
+import { useWhisperTranscription } from "../model/useWhisperTranscription";
 import type { AudioRecorderState, AudioRecorderActions } from "../model/types";
 
 interface SetupScreenProps {
@@ -18,6 +19,7 @@ interface SetupScreenProps {
     | "durationSeconds"
     | "audioUrl"
     | "spectrumLevels"
+    | "recordingStream"
   >;
   actions: Pick<
     AudioRecorderActions,
@@ -60,6 +62,7 @@ export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
     durationSeconds,
     audioUrl,
     spectrumLevels,
+    recordingStream,
   } = state;
 
   const {
@@ -96,6 +99,8 @@ export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
 
   const vizLevels = isBusy ? spectrumLevels : micLevels;
   const vizActive = isBusy || isMicPreviewActive;
+
+  const transcription = useWhisperTranscription(isBusy, recordingStream, "es");
 
   const toggleMicrophoneSource = () => {
     if (isBusy) return;
@@ -152,6 +157,39 @@ export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
           </span>
           <VisualizerBars levels={vizLevels} />
         </div>
+
+        {(isBusy || transcription.finalText) && (
+          <div className="neo-transcription-panel" role="log" aria-live="polite" aria-label="Transcripción en vivo">
+            <div className="neo-transcription-header">
+              <span className="neo-transcription-title">TRANSCRIPCIÓN EN VIVO</span>
+              {(transcription.isModelReady && isBusy) && <span className="neo-transcription-dot" aria-hidden="true" />}
+              {transcription.isModelLoading && (
+                <span className="neo-transcription-progress">Cargando modelo ({transcription.loadProgress}%)</span>
+              )}
+              {transcription.finalText && (
+                <button type="button" className="neo-transcription-clear" onClick={transcription.clear}>
+                  LIMPIAR
+                </button>
+              )}
+            </div>
+            <div className="neo-transcription-body">
+              {transcription.finalText && (
+                <p className="neo-transcription-final">{transcription.finalText}</p>
+              )}
+              {transcription.interimText && (
+                <p className="neo-transcription-interim">{transcription.interimText}</p>
+              )}
+              {!transcription.finalText && !transcription.interimText && !transcription.isModelLoading && (
+                <p className="neo-transcription-placeholder">
+                  {transcription.isProcessing ? "Transcribiendo..." : "Esperando audio..."}
+                </p>
+              )}
+            </div>
+            {transcription.error && (
+              <p className="neo-transcription-error">{transcription.error}</p>
+            )}
+          </div>
+        )}
 
         <div className="neo-setup-card" role="region" aria-label="Audio Setup">
           <div className="neo-setup-section-title">Seleccionar fuente de audio</div>

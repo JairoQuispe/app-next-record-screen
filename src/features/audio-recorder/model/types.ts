@@ -21,6 +21,7 @@ export interface AudioRecorderState {
   selectedMicrophoneId: string | null;
   audioInputSource: AudioInputSource;
   spectrumLevels: number[];
+  recordingStream: MediaStream | null;
 }
 
 export interface AudioRecorderActions {

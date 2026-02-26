@@ -31,6 +31,7 @@ export function AudioRecorderPage() {
         durationSeconds: recorder.durationSeconds,
         audioUrl: recorder.audioUrl,
         spectrumLevels: recorder.spectrumLevels,
+        recordingStream: recorder.recordingStream,
       }}
       actions={{
         requestMicrophonePermission: recorder.requestMicrophonePermission,

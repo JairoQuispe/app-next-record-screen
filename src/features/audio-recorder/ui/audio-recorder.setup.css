@@ -113,6 +113,108 @@
   background: #e74c3c;
 }
 
+/* ── Transcription panel ── */
+.neo-transcription-panel {
+  width: 100%;
+  background: #1a1726;
+  border: 3px solid #3a3548;
+  border-radius: 6px;
+  padding: 1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.neo-transcription-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.neo-transcription-title {
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--electric-yellow);
+}
+
+.neo-transcription-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--neon-green);
+  animation: setup-pulse 1s infinite alternate;
+}
+
+.neo-transcription-progress {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--electric-purple);
+  animation: setup-pulse 1s infinite alternate;
+}
+
+.neo-transcription-clear {
+  margin-left: auto;
+  border: 2px solid #3a3548;
+  border-radius: 3px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: inherit;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.neo-transcription-clear:hover {
+  color: #fff;
+  border-color: #555;
+}
+
+.neo-transcription-body {
+  max-height: 120px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #3a3548 transparent;
+}
+
+.neo-transcription-final {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #e0dce8;
+  white-space: pre-wrap;
+}
+
+.neo-transcription-interim {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 500;
+  font-style: italic;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.neo-transcription-placeholder {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.neo-transcription-error {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #e74c3c;
+}
+
 .neo-viz-bars {
   display: flex;
   align-items: flex-end;
