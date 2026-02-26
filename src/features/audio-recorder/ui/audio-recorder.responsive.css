@@ -54,13 +54,14 @@
   }
 
   .neo-setup-card {
-    padding: 1rem;
-    border-width: 3px;
-    box-shadow: 6px 6px 0 var(--neo-black);
+    padding: 1.2rem;
+  }
+
+  .neo-setup-visualizer {
+    height: 110px;
   }
 
   .neo-setup-content {
-    padding-top: 0.85rem;
     gap: 1rem;
   }
 
