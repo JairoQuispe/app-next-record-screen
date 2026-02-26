@@ -3,7 +3,7 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  padding: 2rem;
+  padding: 2rem 2rem 6rem; /* Reduced bottom padding for full-width bar */
 }
 
 .neo-setup-layout {
@@ -432,6 +432,135 @@
   background: #b38fff;
 }
 
+/* ── Recording Controls (bottom bar) ── */
+.neo-setup-rec-controls {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 50;
+  background-color: rgba(30, 27, 36, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 3px solid var(--neo-black);
+}
+
+/* Visualizer inside bottom bar */
+.neo-setup-visualizer--bar {
+  width: 100%;
+  height: 80px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  position: relative;
+}
+
+.neo-setup-visualizer--bar .neo-viz-bars {
+  width: 100%;
+  height: 100%;
+}
+
+/* Buttons row */
+.neo-setup-rec-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 2rem;
+  width: 100%;
+}
+
+/* Config button */
+.neo-setup-config-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 0;
+  background-color: #f3cf2e;
+  border: 4px solid var(--neo-black);
+  color: var(--neo-black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 5px 5px 0 var(--neo-black);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.neo-setup-config-btn:hover {
+  background-color: #ffd93b;
+  transform: translateY(-1px);
+  box-shadow: 6px 6px 0 var(--neo-black);
+}
+
+.neo-setup-config-btn svg {
+  width: 30px;
+  height: 30px;
+  color: var(--neo-black);
+}
+
+/* Gear button (right side) */
+.neo-setup-gear-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 0;
+  background-color: #f3cf2e;
+  border: 4px solid var(--neo-black);
+  color: var(--neo-black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 5px 5px 0 var(--neo-black);
+  transition: all 0.2s ease;
+  position: relative;
+  font-size: 1.5rem;
+}
+
+.neo-setup-gear-btn:hover {
+  background-color: #ffd93b;
+  transform: translateY(-1px);
+  box-shadow: 6px 6px 0 var(--neo-black);
+}
+
+.neo-setup-gear-btn svg {
+  width: 30px;
+  height: 30px;
+  color: var(--neo-black);
+}
+
+.neo-setup-gear-btn .neo-gear-icon {
+  fill: none;
+  stroke: var(--neo-black);
+}
+
+/* Adjust for Tauri desktop app with titlebar */
+:root[data-tauri="true"] .neo-setup-rec-controls {
+  bottom: 0; /* Full width bar, no adjustment needed */
+}
+
+.neo-setup-rec-buttons .neo-setup-rec-btn {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  min-width: auto;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  gap: 0.3rem;
+  flex-direction: column;
+  background-color: #ea2a33;
+  border: 3px solid white;
+  box-shadow: 4px 4px 0 var(--neo-black);
+}
+
 /* ── Footer / recording controls ── */
 .neo-setup-footer {
   margin-top: 1.4rem;
@@ -468,13 +597,21 @@
 }
 
 .neo-setup-rec-btn {
-  background: var(--hot-pink);
+  background: #ea2a33;
   color: var(--neo-black);
 }
 
 .neo-setup-rec-btn:hover:not(:disabled) {
-  background: #ff5ab3;
+  background: #ff4450;
   transform: translateY(-1px);
+}
+
+/* Specific hover for circular REC button */
+.neo-setup-rec-buttons .neo-setup-rec-btn:hover:not(:disabled) {
+  background: #ff4450;
+  transform: translateY(-1px);
+  border-color: white;
+  box-shadow: 6px 6px 0 var(--neo-black);
 }
 
 .neo-setup-rec-btn:active:not(:disabled) {
@@ -489,6 +626,14 @@
 .neo-rec-dot {
   width: 12px;
   height: 12px;
+  border-radius: 50%;
+  background: var(--neo-black);
+}
+
+/* Adjust dot size for circular REC button */
+.neo-setup-rec-buttons .neo-rec-dot {
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: var(--neo-black);
 }
@@ -842,4 +987,157 @@
   background: rgba(163, 125, 255, 0.15);
   color: var(--electric-purple);
   border: 1px solid rgba(163, 125, 255, 0.3);
+}
+
+/* ── Responsive Design for Mobile ── */
+@media (max-width: 480px) and (orientation: portrait) {
+  .neo-app-shell--setup {
+    padding: 1rem 1rem 4.5rem; /* Adjusted for reduced height bar */
+  }
+  
+  .neo-setup-rec-controls {
+    padding: 0.8rem 1rem;
+  }
+  
+  .neo-setup-layout {
+    max-width: 100%;
+    gap: 1rem;
+  }
+  
+  .neo-setup-card {
+    padding: 1rem;
+    border-radius: 4px;
+  }
+  
+  .neo-setup-section-title {
+    font-size: 0.9rem;
+    margin-bottom: 0.8rem;
+  }
+  
+  .neo-source-options {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .neo-source-btn {
+    min-height: 60px;
+    padding: 0.6rem;
+    gap: 0.6rem;
+  }
+  
+  .neo-source-text {
+    font-size: 0.9rem;
+  }
+  
+  .neo-source-subtext {
+    font-size: 0.75rem;
+  }
+  
+  .neo-source-icon-wrapper {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .neo-source-icon-svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .neo-source-state {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .neo-setup-select {
+    padding: 0.6rem 2rem 0.6rem 0.6rem;
+    font-size: 0.85rem;
+  }
+  
+  .neo-setup-controls {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .neo-setup-rec-btn,
+  .neo-setup-pause-btn,
+  .neo-setup-stop-btn {
+    padding: 0.8rem;
+    font-size: 0.9rem;
+  }
+  
+  .neo-setup-visualizer {
+    height: 80px;
+  }
+  
+  .neo-setup-rec-buttons .neo-setup-rec-btn {
+    width: 70px;
+    height: 70px;
+    font-size: 0.8rem;
+  }
+  
+  .neo-setup-rec-buttons .neo-rec-dot {
+    width: 14px;
+    height: 14px;
+  }
+
+  .neo-setup-visualizer--bar {
+    height: 60px;
+  }
+
+  .neo-setup-rec-buttons {
+    padding: 0.8rem 1rem;
+  }
+  
+  .neo-setup-config-btn {
+    width: 52px;
+    height: 52px;
+  }
+
+  .neo-setup-config-btn svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .neo-setup-gear-btn {
+    width: 52px;
+    height: 52px;
+    font-size: 1.2rem;
+  }
+
+  .neo-setup-gear-btn svg {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+@media (max-width: 360px) {
+  .neo-app-shell--setup {
+    padding: 0.75rem;
+  }
+  
+  .neo-setup-card {
+    padding: 0.8rem;
+  }
+  
+  .neo-source-btn {
+    min-height: 56px;
+    padding: 0.5rem;
+  }
+  
+  .neo-source-text {
+    font-size: 0.85rem;
+  }
+  
+  .neo-source-subtext {
+    font-size: 0.7rem;
+  }
+  
+  .neo-setup-section-title {
+    font-size: 0.85rem;
+  }
+  
+  /* Force single column layout for mobile */
+  .neo-source-options {
+    grid-template-columns: 1fr;
+  }
 }

@@ -94,6 +94,8 @@
   position: relative;
   z-index: 2;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .neo-waveform-canvas {
@@ -354,13 +356,78 @@
 
 /* Responsive */
 @media (max-width: 600px) {
+  .neo-minimal-actions {
+    gap: 2rem;
+  }
+  
   .neo-minimal-btn {
     padding: 1.2rem 1.5rem;
     gap: 1rem;
+    min-height: 60px;
   }
   
   .neo-btn-icon-svg {
     width: 28px;
     height: 28px;
+  }
+  
+  .neo-btn-text {
+    font-size: clamp(1rem, 2.5vw, 1.4rem);
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+}
+
+/* Mobile portrait - text wrapping for long content */
+@media (max-width: 480px) and (orientation: portrait) {
+  .neo-minimal-btn {
+    flex-direction: column;
+    text-align: center;
+    padding: 1rem 1rem; /* Reducido de 1.5rem 1rem */
+    gap: 0.8rem;
+    min-height: auto;
+  }
+  
+  .neo-btn-icon-svg {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 0.2rem;
+  }
+  
+  .neo-btn-text {
+    white-space: normal;
+    line-height: 1.3;
+    font-size: clamp(0.95rem, 2.8vw, 1.2rem);
+    text-align: center;
+    max-width: 100%;
+    word-break: break-word;
+    hyphens: auto;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 360px) {
+  .neo-selection-wrapper {
+    padding: 1rem;
+  }
+  
+  .neo-minimal-actions {
+    max-width: 100%;
+    gap: 1.5rem;
+  }
+  
+  .neo-minimal-btn {
+    padding: 0.8rem 1rem; /* Ajuste adicional para pantallas más pequeñas */
+  }
+  
+  .neo-btn-text {
+    font-size: 0.9rem;
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 320px) {
+  .neo-minimal-btn {
+    padding: 0.6rem 1rem; /* Ajuste para las pantallas más pequeñas */
   }
 }

@@ -71,7 +71,7 @@ body {
   background-color: var(--dark-slate);
   color: var(--neo-fg);
   border: var(--neo-border);
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.25rem;
   font-weight: 800;
   font-size: 0.9rem;
   letter-spacing: 0.05em;
@@ -88,7 +88,7 @@ body {
 .neo-back-button:focus-visible {
   transform: translate(-2px, -2px);
   box-shadow: 6px 6px 0 var(--neo-black);
-  background-color: var(--electric-purple);
+  background-color: #e8d2a3;
   color: var(--neo-black);
   outline: none;
 }
@@ -101,6 +101,23 @@ body {
 .neo-back-icon {
   font-size: 1.2rem;
   font-weight: bold;
+}
+
+/* Mobile: Hide text "VOLVER", show only arrow */
+@media (max-width: 480px) {
+  .neo-back-button {
+    font-size: 0;
+    padding: 0.75rem;
+    min-width: 48px;
+    width: 48px;
+    height: 48px;
+    justify-content: center;
+  }
+  
+  .neo-back-icon {
+    font-size: 1.2rem;
+    margin: 0;
+  }
 }
 
 :root[data-tauri="true"] .neo-app-container {

@@ -49,3 +49,27 @@ body {
   z-index: 10;
   color: var(--neo-fg);
 }
+
+/* Mobile responsive adjustments */
+@media (max-width: 480px) {
+  .neo-app-shell {
+    padding: 1rem;
+  }
+  
+  .neo-dashboard {
+    max-width: 100%;
+    border-width: 3px;
+    box-shadow: 6px 6px 0 var(--neo-black);
+  }
+}
+
+@media (max-width: 360px) {
+  .neo-app-shell {
+    padding: 0.75rem;
+  }
+  
+  .neo-dashboard {
+    border-width: 2px;
+    box-shadow: 4px 4px 0 var(--neo-black);
+  }
+}

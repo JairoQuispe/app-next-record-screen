@@ -85,7 +85,7 @@ function VisualizerBars({ levels }: { levels: number[] }) {
       const bars = barsRef.current;
 
       context.clearRect(0, 0, canvasWidth, canvasHeight);
-      context.fillStyle = "rgba(0, 0, 0, 0.28)";
+      context.fillStyle = "rgba(255, 255, 255, 0.85)";
 
       for (let i = 0; i < barCount; i++) {
         const li = levelCount > 0 ? Math.floor((i / barCount) * levelCount) : 0;
@@ -257,6 +257,7 @@ export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
   } = actions;
 
   const [activeTab, setActiveTab] = useState<TranscriptionTab>("live");
+  const [showConfigPanel, setShowConfigPanel] = useState(false);
 
   const isMicChecked = audioInputSource === "microphone" || audioInputSource === "mixed";
   const isSystemChecked = audioInputSource === "system" || audioInputSource === "mixed";
@@ -346,11 +347,74 @@ export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
           </span>
         </div>
 
-        <div className={`neo-setup-visualizer ${vizActive ? "is-active" : ""}`}>
-          <span className={`neo-viz-badge ${vizActive ? "is-live" : ""}`}>
-            {isRecording ? "REC" : isMicPreviewActive ? "LIVE INPUT" : "NO INPUT"}
-          </span>
-          <VisualizerBars levels={vizLevels} />
+        <div className="neo-setup-rec-controls">
+          {isBusy && (
+            <div className={`neo-setup-visualizer neo-setup-visualizer--bar ${vizActive ? "is-active" : ""}`}>
+              <VisualizerBars levels={vizLevels} />
+            </div>
+          )}
+          <div className="neo-setup-rec-buttons">
+            {isIdle && (
+              <>
+                <button
+                  type="button"
+                  className="neo-setup-config-btn"
+                  onClick={() => setShowConfigPanel(!showConfigPanel)}
+                  aria-label="Configuración de fuentes de audio"
+                >
+                  <MicIcon />
+                </button>
+                <button
+                  type="button"
+                  className="neo-setup-rec-btn"
+                  onClick={() => void startRecording()}
+                  disabled={usesMicrophone && shouldShowPermissionAction}
+                >
+                </button>
+                <button
+                  type="button"
+                  className="neo-setup-gear-btn"
+                  onClick={() => setShowConfigPanel(!showConfigPanel)}
+                  aria-label="Configuración de fuentes de audio"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" className="neo-gear-icon">
+                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </>
+            )}
+            {isRecording && (
+              <>
+                <button type="button" className="neo-setup-pause-btn" onClick={pauseRecording}>
+                  PAUSE
+                </button>
+                <button type="button" className="neo-setup-stop-btn" onClick={() => void stopRecording()}>
+                  STOP
+                </button>
+              </>
+            )}
+            {isPaused && (
+              <>
+                <button type="button" className="neo-setup-rec-btn" onClick={resumeRecording}>
+                  RESUME
+                </button>
+                <button type="button" className="neo-setup-stop-btn" onClick={() => void stopRecording()}>
+                  STOP
+                </button>
+              </>
+            )}
+            {isStopped && (
+              <button
+                type="button"
+                className="neo-setup-rec-btn"
+                onClick={() => void startRecording()}
+              >
+                <span className="neo-rec-dot" aria-hidden="true" />
+                REC
+              </button>
+            )}
+          </div>
         </div>
 
         {(isBusy || transcription.finalText || diarization.status !== "idle") && (
@@ -480,8 +544,9 @@ export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
           </div>
         )}
 
-        <div className="neo-setup-card" role="region" aria-label="Audio Setup">
-          <div className="neo-setup-section-title">Seleccionar fuente de audio</div>
+        {showConfigPanel && (
+          <div className="neo-setup-card" role="region" aria-label="Audio Setup">
+            <div className="neo-setup-section-title">Seleccionar fuente de audio</div>
 
           <div className="neo-setup-content">
             {!isSupported && <div className="neo-error" role="alert">Tu dispositivo no soporta grabación de audio.</div>}
@@ -510,27 +575,29 @@ export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
                   </span>
                 </button>
 
-                <button 
-                  type="button"
-                  aria-pressed={isSystemChecked}
-                  className={`neo-source-btn ${isSystemChecked ? "active" : ""}`}
-                  onClick={toggleSystemSource}
-                  disabled={!isSystemAudioSupported || isBusy}
-                  aria-disabled={!isSystemAudioSupported || isBusy}
-                >
-                  <span className="neo-source-content">
-                    <span className="neo-source-icon-wrapper" aria-hidden="true">
-                      <MonitorIcon />
+                {isSystemAudioSupported ? (
+                  <button 
+                    type="button"
+                    aria-pressed={isSystemChecked}
+                    className={`neo-source-btn system-audio-btn ${isSystemChecked ? "active" : ""}`}
+                    onClick={toggleSystemSource}
+                    disabled={!isSystemAudioSupported || isBusy}
+                    aria-disabled={!isSystemAudioSupported || isBusy}
+                  >
+                    <span className="neo-source-content">
+                      <span className="neo-source-icon-wrapper" aria-hidden="true">
+                        <MonitorIcon />
+                      </span>
+                      <span className="neo-source-copy">
+                        <span className="neo-source-text">System Audio</span>
+                        <span className="neo-source-subtext">Computer sounds</span>
+                      </span>
                     </span>
-                    <span className="neo-source-copy">
-                      <span className="neo-source-text">System Audio</span>
-                      <span className="neo-source-subtext">Computer sounds</span>
+                    <span className={`neo-source-state ${isSystemChecked ? "is-active" : ""}`} aria-hidden="true">
+                      {isSystemChecked ? <CheckIcon /> : null}
                     </span>
-                  </span>
-                  <span className={`neo-source-state ${isSystemChecked ? "is-active" : ""}`} aria-hidden="true">
-                    {isSystemChecked ? <CheckIcon /> : null}
-                  </span>
-                </button>
+                  </button>
+                ) : null}
               </div>
             </section>
 
@@ -570,56 +637,8 @@ export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
               </section>
             )}
           </div>
-
-          <footer className="neo-setup-footer">
-            <div className="neo-setup-controls">
-              {isIdle && (
-                <button
-                  type="button"
-                  className="neo-setup-rec-btn"
-                  onClick={() => void startRecording()}
-                  disabled={usesMicrophone && shouldShowPermissionAction}
-                >
-                  <span className="neo-rec-dot" aria-hidden="true" />
-                  REC
-                </button>
-              )}
-
-              {isRecording && (
-                <>
-                  <button type="button" className="neo-setup-pause-btn" onClick={pauseRecording}>
-                    PAUSE
-                  </button>
-                  <button type="button" className="neo-setup-stop-btn" onClick={() => void stopRecording()}>
-                    STOP
-                  </button>
-                </>
-              )}
-
-              {isPaused && (
-                <>
-                  <button type="button" className="neo-setup-rec-btn" onClick={resumeRecording}>
-                    RESUME
-                  </button>
-                  <button type="button" className="neo-setup-stop-btn" onClick={() => void stopRecording()}>
-                    STOP
-                  </button>
-                </>
-              )}
-
-              {isStopped && (
-                <button
-                  type="button"
-                  className="neo-setup-rec-btn"
-                  onClick={() => void startRecording()}
-                >
-                  <span className="neo-rec-dot" aria-hidden="true" />
-                  REC
-                </button>
-              )}
-            </div>
-          </footer>
         </div>
+        )}
 
         {audioUrl && (
           <div className="neo-setup-playback neo-animate-slide-up">
