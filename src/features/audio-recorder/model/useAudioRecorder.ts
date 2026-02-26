@@ -620,10 +620,31 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
         console.log("[useAudioRecorder] Starting native system audio capture...");
         await startNativeSystemAudioCapture();
         nativeCaptureActiveRef.current = true;
+
+        // For real-time transcription on desktop, we also try to open a web
+        // system-audio stream and feed it to Whisper. If it fails (picker
+        // canceled / unsupported), native recording still continues.
+        let hasRealtimeTranscriptionStream = false;
+        try {
+          const transcriptionStream = await getSystemAudioStream();
+          streamRef.current = transcriptionStream;
+          setRecordingStream(transcriptionStream);
+          startSpectrumMonitor(transcriptionStream);
+          hasRealtimeTranscriptionStream = true;
+        } catch (transcriptionStreamError) {
+          console.warn(
+            "[useAudioRecorder] Real-time transcription stream unavailable for native system capture:",
+            transcriptionStreamError,
+          );
+          setRecordingStream(null);
+        }
+
         setStatus("recording");
         setDurationSeconds(0);
         startTimer();
-        startNativeSpectrum();
+        if (!hasRealtimeTranscriptionStream) {
+          startNativeSpectrum();
+        }
         return;
       }
 
@@ -714,6 +735,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     refreshAvailableMicrophones,
     requestMicrophonePermission,
     resetRecordingData,
+    getSystemAudioStream,
     startNativeSpectrum,
     startSpectrumMonitor,
     startTimer,

@@ -3,6 +3,8 @@ import { pipeline, env } from "@huggingface/transformers";
 // Disable local model caching attempts (use browser cache only)
 env.allowLocalModels = false;
 
+const WHISPER_MODEL = "onnx-community/whisper-base";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let whisperPipeline: any = null;
 let isLoading = false;
@@ -32,7 +34,7 @@ async function loadModel() {
   try {
     whisperPipeline = await (pipeline as Function)(
       "automatic-speech-recognition",
-      "onnx-community/whisper-tiny",
+      WHISPER_MODEL,
       {
         dtype: "q8",
         device: "wasm",
@@ -61,8 +63,8 @@ async function transcribe(audio: Float32Array, language: string) {
     const result = await whisperPipeline(audio, {
       language,
       task: "transcribe",
-      chunk_length_s: 30,
-      stride_length_s: 5,
+      chunk_length_s: 12,
+      stride_length_s: 3,
     });
 
     const text = Array.isArray(result)
