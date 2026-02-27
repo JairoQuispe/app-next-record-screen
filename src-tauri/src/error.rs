@@ -26,6 +26,9 @@ pub enum AppError {
 
     #[error("WAV encoding error: {0}")]
     WavEncode(String),
+
+    #[error("Audio enhancement error: {0}")]
+    AudioEnhance(String),
 }
 
 impl AppError {
@@ -40,6 +43,7 @@ impl AppError {
             Self::Io(_) => "IO_ERROR",
             Self::AudioCapture(_) => "AUDIO_CAPTURE_ERROR",
             Self::WavEncode(_) => "WAV_ENCODE_ERROR",
+            Self::AudioEnhance(_) => "AUDIO_ENHANCE_ERROR",
         }
     }
 }

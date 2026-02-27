@@ -1,10 +1,12 @@
-import { useRef, useEffect, useState } from "react";
+import { memo, useRef, useEffect, useState } from "react";
 import { MicIcon, MonitorIcon } from "@shared/ui/icons";
 import { formatDuration } from "@shared/lib/utils";
 import { isTauriRuntime } from "@shared/lib/runtime/isTauriRuntime";
 import { useMicrophonePreview } from "../model/useMicrophonePreview";
 import { useWhisperTranscription } from "../model/useWhisperTranscription";
 import { useSpeakerDiarization } from "../model/useSpeakerDiarization";
+import { useAudioSettings } from "../model/useAudioSettings";
+import { useNoiseSuppression } from "../model/useNoiseSuppression";
 import type { AudioRecorderState, AudioRecorderActions, SpeakerSegment, SpeakerStats, ParticipantSummary } from "../model/types";
 
 interface SetupScreenProps {
@@ -22,6 +24,9 @@ interface SetupScreenProps {
     | "audioUrl"
     | "spectrumLevels"
     | "recordingStream"
+    | "denoiseEnabled"
+    | "denoiseIntensity"
+    | "normalizeEnabled"
   >;
   actions: Pick<
     AudioRecorderActions,
@@ -33,11 +38,15 @@ interface SetupScreenProps {
     | "pauseRecording"
     | "resumeRecording"
     | "saveRecording"
+    | "setDenoiseEnabled"
+    | "setDenoiseIntensity"
+    | "setNormalizeEnabled"
   >;
+  nativeWavPath?: string | null;
   animateIn: boolean;
 }
 
-function VisualizerBars({ levels }: { levels: number[] }) {
+const VisualizerBars = memo(function VisualizerBars({ levels }: { levels: number[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const levelsRef = useRef<number[]>(levels);
@@ -125,7 +134,7 @@ function VisualizerBars({ levels }: { levels: number[] }) {
       <canvas ref={canvasRef} className="neo-viz-canvas" aria-hidden="true" />
     </div>
   );
-}
+});
 
 type TranscriptionTab = "live" | "speakers" | "summary";
 
@@ -136,7 +145,7 @@ function formatMs(ms: number): string {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
-function SpeakerSegmentList({ segments }: { segments: SpeakerSegment[] }) {
+const SpeakerSegmentList = memo(function SpeakerSegmentList({ segments }: { segments: SpeakerSegment[] }) {
   if (segments.length === 0) {
     return <p className="neo-diarize-empty">No se detectaron segmentos de hablantes.</p>;
   }
@@ -167,9 +176,9 @@ function SpeakerSegmentList({ segments }: { segments: SpeakerSegment[] }) {
       })}
     </div>
   );
-}
+});
 
-function SpeakerStatsPanel({ stats }: { stats: SpeakerStats[] }) {
+const SpeakerStatsPanel = memo(function SpeakerStatsPanel({ stats }: { stats: SpeakerStats[] }) {
   if (stats.length === 0) return null;
   return (
     <div className="neo-diarize-stats">
@@ -191,9 +200,9 @@ function SpeakerStatsPanel({ stats }: { stats: SpeakerStats[] }) {
       ))}
     </div>
   );
-}
+});
 
-function ParticipantSummaryPanel({ summaries, stats }: { summaries: ParticipantSummary[]; stats: SpeakerStats[] }) {
+const ParticipantSummaryPanel = memo(function ParticipantSummaryPanel({ summaries, stats }: { summaries: ParticipantSummary[]; stats: SpeakerStats[] }) {
   if (summaries.length === 0) {
     return <p className="neo-diarize-empty">No hay resumen disponible.</p>;
   }
@@ -227,9 +236,9 @@ function ParticipantSummaryPanel({ summaries, stats }: { summaries: ParticipantS
       })}
     </div>
   );
-}
+});
 
-export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
+export function SetupScreen({ state, actions, nativeWavPath, animateIn }: SetupScreenProps) {
   const {
     isSupported,
     isSystemAudioSupported,
@@ -243,6 +252,9 @@ export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
     audioUrl,
     spectrumLevels,
     recordingStream,
+    denoiseEnabled,
+    denoiseIntensity,
+    normalizeEnabled,
   } = state;
 
   const {
@@ -254,10 +266,31 @@ export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
     pauseRecording,
     resumeRecording,
     saveRecording,
+    setDenoiseEnabled,
+    setDenoiseIntensity,
+    setNormalizeEnabled,
   } = actions;
 
   const [activeTab, setActiveTab] = useState<TranscriptionTab>("live");
   const [showConfigPanel, setShowConfigPanel] = useState(false);
+  const [showGearPanel, setShowGearPanel] = useState(false);
+  const [playbackMode, setPlaybackMode] = useState<"original" | "enhanced">("enhanced");
+
+  const noiseSuppression = useNoiseSuppression();
+
+  const { hydrate: hydrateSettings } = useAudioSettings(
+    denoiseEnabled,
+    denoiseIntensity,
+    normalizeEnabled,
+    setDenoiseEnabled,
+    setDenoiseIntensity,
+    setNormalizeEnabled,
+  );
+
+  // Hydrate persisted settings on mount
+  useEffect(() => {
+    hydrateSettings();
+  }, [hydrateSettings]);
 
   const isMicChecked = audioInputSource === "microphone" || audioInputSource === "mixed";
   const isSystemChecked = audioInputSource === "system" || audioInputSource === "mixed";
@@ -287,12 +320,28 @@ export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
   const diarization = useSpeakerDiarization("es");
   const prevStatusRef = useRef(status);
 
+  const hasExtraContent =
+    (isBusy || Boolean(transcription.finalText) || diarization.status !== "idle") ||
+    Boolean(audioUrl) ||
+    !isSupported ||
+    Boolean(errorMessage);
+
   // Auto-trigger diarization when recording stops and audio is available
   useEffect(() => {
     if (prevStatusRef.current === "recording" || prevStatusRef.current === "paused") {
       if (status === "stopped" && audioUrl) {
         diarization.startDiarization(audioUrl);
         setActiveTab("speakers");
+
+        // Auto-trigger noise suppression if enabled
+        if (denoiseEnabled && denoiseIntensity > 0) {
+          noiseSuppression.enhance(
+            audioUrl,
+            nativeWavPath ?? null,
+            denoiseIntensity,
+            normalizeEnabled,
+          );
+        }
       }
     }
     prevStatusRef.current = status;
@@ -334,7 +383,7 @@ export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
 
   return (
     <main className={`neo-app-shell neo-app-shell--setup neo-animate-enter ${animateIn ? 'is-visible' : ''}`}>
-      <div className="neo-setup-layout">
+      <div className={`neo-setup-layout ${hasExtraContent ? "is-scrollable" : "is-locked"}`}>
 
         <div className="neo-setup-hero">
           <span className="neo-setup-hero-label">DURATION</span>
@@ -418,6 +467,69 @@ export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
             </div>
           )}
 
+          {showGearPanel && (isIdle || isStopped) && (
+            <div className="neo-config-popup neo-gear-popup" role="region" aria-label="Audio Enhancement">
+              <div className="neo-gear-section">
+                <div className="neo-gear-row">
+                  <span className="neo-gear-label">SUPRIMIR RUIDO</span>
+                  <button
+                    type="button"
+                    className={`neo-gear-toggle ${denoiseEnabled ? "is-on" : ""}`}
+                    onClick={() => setDenoiseEnabled(!denoiseEnabled)}
+                    aria-pressed={denoiseEnabled}
+                    aria-label="Activar supresión de ruido"
+                  >
+                    <span className="neo-gear-toggle-knob" />
+                  </button>
+                </div>
+                <p className="neo-gear-desc">
+                  Elimina ruido de fondo y prioriza las voces humanas usando IA. Ajusta la intensidad para controlar cuánto ruido se suprime.
+                </p>
+
+                {denoiseEnabled && (
+                  <div className="neo-gear-slider-group">
+                    <label className="neo-gear-slider-label" htmlFor="denoise-intensity">
+                      INTENSIDAD: <strong>{denoiseIntensity}%</strong>
+                    </label>
+                    <input
+                      id="denoise-intensity"
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={denoiseIntensity}
+                      onChange={(e) => setDenoiseIntensity(Number(e.target.value))}
+                      className="neo-gear-slider"
+                    />
+                    <div className="neo-gear-slider-marks">
+                      <span>0%</span>
+                      <span>50%</span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="neo-gear-section">
+                <div className="neo-gear-row">
+                  <span className="neo-gear-label">NORMALIZAR VOLUMEN</span>
+                  <button
+                    type="button"
+                    className={`neo-gear-toggle ${normalizeEnabled ? "is-on" : ""}`}
+                    onClick={() => setNormalizeEnabled(!normalizeEnabled)}
+                    aria-pressed={normalizeEnabled}
+                    aria-label="Activar normalización de volumen"
+                  >
+                    <span className="neo-gear-toggle-knob" />
+                  </button>
+                </div>
+                <p className="neo-gear-desc">
+                  Iguala el volumen del audio para que las partes silenciosas se escuchen mejor sin distorsionar las más fuertes.
+                </p>
+              </div>
+            </div>
+          )}
+
           {isBusy && (
             <div className={`neo-setup-visualizer neo-setup-visualizer--bar ${vizActive ? "is-active" : ""}`}>
               <VisualizerBars levels={vizLevels} />
@@ -444,8 +556,8 @@ export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
                 <button
                   type="button"
                   className="neo-setup-gear-btn"
-                  onClick={() => setShowConfigPanel(!showConfigPanel)}
-                  aria-label="Configuración de fuentes de audio"
+                  onClick={() => { setShowGearPanel(!showGearPanel); setShowConfigPanel(false); }}
+                  aria-label="Configuración de audio"
                 >
                   <svg 
                     viewBox="0 0 24 24" 
@@ -546,8 +658,8 @@ export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
                 <button
                   type="button"
                   className="neo-setup-gear-btn"
-                  onClick={() => setShowConfigPanel(!showConfigPanel)}
-                  aria-label="Configuración de fuentes de audio"
+                  onClick={() => { setShowGearPanel(!showGearPanel); setShowConfigPanel(false); }}
+                  aria-label="Configuración de audio"
                 >
                   <svg 
                     viewBox="0 0 24 24" 
@@ -704,7 +816,54 @@ export function SetupScreen({ state, actions, animateIn }: SetupScreenProps) {
         {audioUrl && (
           <div className="neo-setup-playback neo-animate-slide-up">
             <p className="neo-setup-playback-title">GRABACIÓN LISTA</p>
-            <audio controls src={audioUrl} className="neo-setup-audio-player" />
+
+            {noiseSuppression.isProcessing && (
+              <div className="neo-enhance-progress">
+                <div className="neo-enhance-progress-bar">
+                  <div
+                    className="neo-enhance-progress-fill"
+                    style={{ width: `${noiseSuppression.progress}%` }}
+                  />
+                </div>
+                <span className="neo-enhance-progress-label">
+                  MEJORANDO AUDIO... {noiseSuppression.progress}%
+                </span>
+              </div>
+            )}
+
+            {noiseSuppression.error && (
+              <div className="neo-enhance-error">{noiseSuppression.error}</div>
+            )}
+
+            {noiseSuppression.enhancedAudioUrl && !noiseSuppression.isProcessing && (
+              <div className="neo-playback-tabs">
+                <button
+                  type="button"
+                  className={`neo-playback-tab ${playbackMode === "original" ? "is-active" : ""}`}
+                  onClick={() => setPlaybackMode("original")}
+                >
+                  ORIGINAL
+                </button>
+                <button
+                  type="button"
+                  className={`neo-playback-tab ${playbackMode === "enhanced" ? "is-active" : ""}`}
+                  onClick={() => setPlaybackMode("enhanced")}
+                >
+                  MEJORADO
+                </button>
+              </div>
+            )}
+
+            <audio
+              controls
+              src={
+                playbackMode === "enhanced" && noiseSuppression.enhancedAudioUrl
+                  ? noiseSuppression.enhancedAudioUrl
+                  : audioUrl
+              }
+              className="neo-setup-audio-player"
+            />
+
             {isTauri ? (
               <button
                 type="button"

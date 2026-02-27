@@ -32,6 +32,9 @@ export function AudioRecorderPage() {
         audioUrl: recorder.audioUrl,
         spectrumLevels: recorder.spectrumLevels,
         recordingStream: recorder.recordingStream,
+        denoiseEnabled: recorder.denoiseEnabled,
+        denoiseIntensity: recorder.denoiseIntensity,
+        normalizeEnabled: recorder.normalizeEnabled,
       }}
       actions={{
         requestMicrophonePermission: recorder.requestMicrophonePermission,
@@ -42,6 +45,9 @@ export function AudioRecorderPage() {
         pauseRecording: recorder.pauseRecording,
         resumeRecording: recorder.resumeRecording,
         saveRecording: recorder.saveRecording,
+        setDenoiseEnabled: recorder.setDenoiseEnabled,
+        setDenoiseIntensity: recorder.setDenoiseIntensity,
+        setNormalizeEnabled: recorder.setNormalizeEnabled,
       }}
       animateIn={animateIn}
     />

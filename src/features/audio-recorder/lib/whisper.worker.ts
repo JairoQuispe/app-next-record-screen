@@ -3,6 +3,11 @@ import { pipeline, env } from "@huggingface/transformers";
 // Disable local model caching attempts (use browser cache only)
 env.allowLocalModels = false;
 
+// Load ONNX Runtime WASM from CDN to avoid bundling the ~21 MB file
+if (env.backends?.onnx?.wasm) {
+  env.backends.onnx.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/";
+}
+
 const WHISPER_MODEL = "onnx-community/whisper-base";
 
 const VAD_RMS_THRESHOLD = 0.012;

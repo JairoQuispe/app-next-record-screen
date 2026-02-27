@@ -136,3 +136,242 @@
   flex-shrink: 0;
   color: var(--neon-green);
 }
+
+/* ── Gear Panel (audio enhancement settings) ── */
+.neo-gear-popup {
+  gap: 0.5rem;
+}
+
+.neo-gear-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+}
+
+.neo-gear-section + .neo-gear-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 0.6rem;
+}
+
+.neo-gear-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.neo-gear-label {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.neo-gear-desc {
+  margin: 0;
+  font-size: 1rem;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-weight: 500;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0;
+}
+
+/* ── Toggle Switch ── */
+.neo-gear-toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.neo-gear-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 0;
+  transition: all 0.15s ease;
+  display: block;
+}
+
+.neo-gear-toggle.is-on {
+  border-color: var(--neon-green);
+  background: rgba(57, 255, 20, 0.12);
+}
+
+.neo-gear-toggle.is-on .neo-gear-toggle-knob {
+  left: 20px;
+  background: var(--neon-green);
+}
+
+.neo-gear-toggle:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.neo-gear-toggle.is-on:hover {
+  border-color: var(--neon-green);
+}
+
+/* ── Intensity Slider ── */
+.neo-gear-slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0 0.15rem;
+}
+
+.neo-gear-slider-label {
+  font-family: inherit;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.neo-gear-slider-label strong {
+  color: var(--neon-green);
+  font-weight: 900;
+}
+
+.neo-gear-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0;
+  outline: none;
+  cursor: pointer;
+}
+
+.neo-gear-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--neon-green);
+  border: 2px solid var(--neo-black);
+  border-radius: 0;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--neo-black);
+  transition: transform 0.1s ease;
+}
+
+.neo-gear-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.neo-gear-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--neon-green);
+  border: 2px solid var(--neo-black);
+  border-radius: 0;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--neo-black);
+}
+
+.neo-gear-slider-marks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.25);
+  letter-spacing: 0.04em;
+}
+
+/* ── A/B Playback Tabs ── */
+.neo-playback-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 0.5rem;
+}
+
+.neo-playback-tab {
+  flex: 1;
+  padding: 0.4rem 0.75rem;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.4);
+  font-family: inherit;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.neo-playback-tab:first-child {
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.neo-playback-tab:last-child {
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.neo-playback-tab:hover {
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.neo-playback-tab.is-active {
+  border-color: var(--neon-green);
+  color: var(--neon-green);
+  background: rgba(57, 255, 20, 0.08);
+}
+
+/* ── Enhancement Progress ── */
+.neo-enhance-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+}
+
+.neo-enhance-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.neo-enhance-progress-fill {
+  height: 100%;
+  background: var(--neon-green);
+  transition: width 0.3s ease;
+}
+
+.neo-enhance-progress-label {
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--neon-green);
+  text-align: center;
+}
+
+.neo-enhance-error {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #ea2a33;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid rgba(234, 42, 51, 0.3);
+  background: rgba(234, 42, 51, 0.08);
+  margin-bottom: 0.5rem;
+}

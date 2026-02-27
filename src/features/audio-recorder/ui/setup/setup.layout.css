@@ -10,6 +10,11 @@
   position: relative;
 }
 
+:root[data-tauri="true"] .neo-app-shell--setup {
+  height: calc(100vh - var(--neo-titlebar-height, 0px));
+  width: 100%;
+}
+
 .neo-setup-layout {
   width: 100%;
   height: 100%;
@@ -17,10 +22,18 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  overflow-y: auto;
+  overflow-y: hidden;
   overflow-x: hidden;
   padding: 1rem 1rem calc(6rem + 1rem); /* Space for fixed controls */
   box-sizing: border-box;
   justify-content: center;
   align-items: center;
+}
+
+.neo-setup-layout.is-scrollable {
+  overflow-y: auto;
+}
+
+.neo-setup-layout.is-locked {
+  overflow-y: hidden;
 }

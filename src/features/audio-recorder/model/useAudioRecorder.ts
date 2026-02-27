@@ -88,6 +88,9 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     () => SPECTRUM_ZERO_LEVELS,
   );
   const [recordingStream, setRecordingStream] = useState<MediaStream | null>(null);
+  const [denoiseEnabled, setDenoiseEnabled] = useState(false);
+  const [denoiseIntensity, setDenoiseIntensityState] = useState(65);
+  const [normalizeEnabled, setNormalizeEnabled] = useState(false);
 
   const streamRef = useRef<MediaStream | null>(null);
   const displayStreamRef = useRef<MediaStream | null>(null);
@@ -776,6 +779,10 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     setErrorMessage(null);
   }, [status]);
 
+  const setDenoiseIntensity = useCallback((intensity: number) => {
+    setDenoiseIntensityState(Math.max(0, Math.min(100, intensity)));
+  }, []);
+
   useEffect(() => {
     if (!isSupported) {
       setMicrophonePermission("unsupported");
@@ -858,6 +865,9 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     audioInputSource,
     spectrumLevels,
     recordingStream,
+    denoiseEnabled,
+    denoiseIntensity,
+    normalizeEnabled,
     startRecording,
     stopRecording,
     pauseRecording,
@@ -867,5 +877,8 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     requestMicrophonePermission,
     selectMicrophone,
     setAudioInputSource,
+    setDenoiseEnabled,
+    setDenoiseIntensity,
+    setNormalizeEnabled,
   };
 }

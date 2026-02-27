@@ -1,10 +1,6 @@
 /* ── Audio Recorder Base Layout ── */
-/* Body background gradient overlay for audio recorder views */
 body {
-  background:
-    radial-gradient(circle at 70% 20%, rgba(255, 64, 160, 0.18), transparent 45%),
-    radial-gradient(circle at 20% 80%, rgba(57, 255, 20, 0.1), transparent 38%),
-    var(--neo-bg);
+  background-color: rgb(30, 27, 36);
 }
 
 .neo-app-shell {

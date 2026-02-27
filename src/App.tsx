@@ -1,9 +1,12 @@
-import { useCallback, useState } from "react";
-import { AudioRecorderPage } from "@features/audio-recorder";
+import { lazy, Suspense, useCallback, useState } from "react";
 import { SelectionPage } from "@features/selection";
 import { TitleBar } from "@shared/ui/titlebar/TitleBar";
 import { isTauriRuntime } from "@shared/lib/runtime";
 import "./App.css";
+
+const AudioRecorderPage = lazy(() =>
+  import("@features/audio-recorder/ui/AudioRecorderPage").then((m) => ({ default: m.AudioRecorderPage }))
+);
 
 type AppMode = "selection" | "audio" | "screen";
 type TitleBarState = {
@@ -93,7 +96,9 @@ function App() {
               <span className="neo-back-label">VOLVER</span>
             </button>
           )}
-          <AudioRecorderPage />
+          <Suspense fallback={null}>
+            <AudioRecorderPage />
+          </Suspense>
         </div>
       </>
     );

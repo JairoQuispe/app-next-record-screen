@@ -4,9 +4,11 @@ mod wasapi;
 mod wav;
 #[cfg(windows)]
 mod capture;
+mod enhance;
 
 #[cfg(windows)]
 pub use capture::SystemAudioHandle;
+pub use enhance::{denoise_wav, RealtimeDenoiser};
 
 #[cfg(windows)]
 pub fn check_system_audio_available() -> bool {

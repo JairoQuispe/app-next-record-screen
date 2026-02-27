@@ -1,13 +1,28 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath, URL } from "node:url";
 
 
 const host = process.env.TAURI_DEV_HOST;
 
+// Strip ONNX Runtime WASM from dist — workers load it from CDN at runtime
+function stripOnnxWasm(): Plugin {
+  return {
+    name: "strip-onnx-wasm",
+    enforce: "post",
+    generateBundle(_options, bundle) {
+      for (const key of Object.keys(bundle)) {
+        if (key.endsWith(".wasm")) {
+          delete bundle[key];
+        }
+      }
+    },
+  };
+}
+
 // https://vitejs.dev/config/
-export default defineConfig(async () => ({
-  plugins: [react()],
+export default defineConfig(() => ({
+  plugins: [react(), stripOnnxWasm()],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
@@ -35,6 +50,24 @@ export default defineConfig(async () => ({
     watch: {
       // 3. tell vite to ignore watching `src-tauri`
       ignored: ["**/src-tauri/**"],
+    },
+  },
+
+  build: {
+    target: ["es2021", "chrome100", "safari15"],
+    minify: "esbuild",
+    cssMinify: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes("@tauri-apps")) {
+            return "tauri";
+          }
+        },
+      },
+    },
+    worker: {
+      format: "es",
     },
   },
 }));

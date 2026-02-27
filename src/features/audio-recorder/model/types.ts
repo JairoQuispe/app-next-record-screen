@@ -57,6 +57,9 @@ export interface AudioRecorderState {
   audioInputSource: AudioInputSource;
   spectrumLevels: number[];
   recordingStream: MediaStream | null;
+  denoiseEnabled: boolean;
+  denoiseIntensity: number;
+  normalizeEnabled: boolean;
 }
 
 export interface AudioRecorderActions {
@@ -69,4 +72,7 @@ export interface AudioRecorderActions {
   requestMicrophonePermission: () => Promise<boolean>;
   selectMicrophone: (deviceId: string) => void;
   setAudioInputSource: (source: AudioInputSource) => void;
+  setDenoiseEnabled: (enabled: boolean) => void;
+  setDenoiseIntensity: (intensity: number) => void;
+  setNormalizeEnabled: (enabled: boolean) => void;
 }

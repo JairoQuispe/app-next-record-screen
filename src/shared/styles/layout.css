@@ -3,9 +3,7 @@
   position: relative;
   min-height: 100vh;
   padding-top: var(--neo-titlebar-height, 0px);
-  background-color: var(--neo-bg);
-  background-image: radial-gradient(var(--dark-slate) 2px, transparent 2px);
-  background-size: 24px 24px;
+  background-color: rgb(30, 27, 36);
   box-sizing: border-box;
 }
 

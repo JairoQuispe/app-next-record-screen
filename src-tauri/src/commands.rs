@@ -60,6 +60,30 @@ pub async fn stop_system_audio_capture(
 }
 
 #[tauri::command]
+pub async fn enhance_audio(
+    input_path: String,
+    intensity: f32,
+    normalize: bool,
+) -> Result<String, AppError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let temp_dir = std::env::temp_dir();
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis();
+        let output_path = temp_dir
+            .join(format!("recogni_enhanced_{timestamp}.wav"))
+            .to_string_lossy()
+            .to_string();
+
+        let intensity = intensity.clamp(0.0, 1.0);
+        audio::denoise_wav(&input_path, &output_path, intensity, normalize)
+    })
+    .await
+    .map_err(|e| AppError::AudioEnhance(format!("Task join: {e}")))?
+}
+
+#[tauri::command]
 pub async fn is_system_audio_available() -> bool {
     tauri::async_runtime::spawn_blocking(audio::check_system_audio_available)
         .await

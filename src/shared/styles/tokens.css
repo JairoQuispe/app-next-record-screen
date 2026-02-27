@@ -1,7 +1,7 @@
 /* ── Design Tokens: Neo-brutalism Dark Mode ── */
 :root {
   /* Core palette */
-  --deep-charcoal: #1E1B24;
+  --deep-charcoal: rgb(30, 27, 36);
   --dark-slate: #2A2633;
   --electric-yellow: #FDC500;
   --hot-pink: #FF40A0;
