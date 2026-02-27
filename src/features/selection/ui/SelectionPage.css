@@ -1,8 +1,4 @@
-/* Neo-brutalism design system (Dark Mode - Minimalist) */
-:root {
-  --neo-border-width: 4px;
-}
-
+/* ── Selection Page ── */
 .neo-selection-wrapper {
   min-height: 100vh;
   display: flex;

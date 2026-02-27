@@ -1,30 +1,10 @@
-:root {
-  --neo-bg: #1e1b24;
-  --neo-panel: #2a2633;
-  --neo-black: #000000;
-  --neo-pink: #ff40a0;
-  --neo-green: #39ff14;
-  --neo-text: #f8f6ff;
-  --neo-muted: rgba(248, 246, 255, 0.5);
-}
-
-* {
-  box-sizing: border-box;
-}
-
+/* ── Audio Recorder Base Layout ── */
+/* Body background gradient overlay for audio recorder views */
 body {
-  margin: 0;
-  min-height: 100vh;
-  font-family: "Space Grotesk", sans-serif;
   background:
     radial-gradient(circle at 70% 20%, rgba(255, 64, 160, 0.18), transparent 45%),
     radial-gradient(circle at 20% 80%, rgba(57, 255, 20, 0.1), transparent 38%),
     var(--neo-bg);
-  color: var(--neo-text);
-}
-
-#root {
-  min-height: 100vh;
 }
 
 .neo-app-shell {

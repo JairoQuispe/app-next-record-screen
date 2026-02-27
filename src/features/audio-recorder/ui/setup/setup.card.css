@@ -1,0 +1,204 @@
+/* ── Setup Card + Source Buttons + Device Selector ── */
+.neo-setup-card {
+  width: 100%;
+  background: #2a2633;
+  border: 3px solid #3a3548;
+  border-radius: 6px;
+  padding: 1.8rem 1.6rem;
+  color: #ffffff;
+}
+
+.neo-setup-section-title {
+  margin: 0;
+  margin-bottom: 1.2rem;
+  font-size: 1.05rem;
+  color: #ffffff;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+.neo-setup-content {
+  display: grid;
+  gap: 1.4rem;
+}
+
+.neo-setup-section {
+  display: grid;
+  gap: 1rem;
+}
+
+.neo-setup-label {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--electric-yellow);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── Source Buttons ── */
+.neo-source-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.neo-source-btn {
+  width: 100%;
+  border: 3px solid #3a3548;
+  background: #1a1726;
+  color: #ffffff;
+  min-height: 72px;
+  padding: 0.7rem 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+.neo-source-btn:hover:not(:disabled) {
+  border-color: #504a60;
+  background: #201d2e;
+}
+
+.neo-source-btn:active:not(:disabled) {
+  background: #161324;
+}
+
+.neo-source-btn:focus-visible {
+  outline: 3px solid var(--electric-yellow);
+  outline-offset: 2px;
+}
+
+.neo-source-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.neo-source-btn.active {
+  border-color: #504a60;
+  background: #1e1b2a;
+}
+
+.neo-source-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.neo-source-icon-wrapper {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  color: #e0dce8;
+}
+
+.neo-source-icon-svg {
+  width: 22px;
+  height: 22px;
+}
+
+.neo-source-copy {
+  display: grid;
+  gap: 0.12rem;
+  text-align: left;
+}
+
+.neo-source-text {
+  font-size: 0.98rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.neo-source-subtext {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.neo-source-state {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #3a3548;
+  background: #2d2a39;
+  color: #111;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+
+.neo-source-state.is-active {
+  background: var(--neon-green);
+  border-color: var(--neon-green);
+}
+
+/* ── Device Selector ── */
+.neo-input-group {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.neo-select-wrapper {
+  position: relative;
+}
+
+.neo-setup-select {
+  width: 100%;
+  border: 3px solid #3a3548;
+  border-radius: 4px;
+  background: #1a1726;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  padding: 0.8rem 2.5rem 0.8rem 0.85rem;
+  appearance: none;
+}
+
+.neo-setup-select:focus {
+  outline: none;
+  border-color: var(--electric-yellow);
+}
+
+.neo-select-arrow {
+  position: absolute;
+  right: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--electric-yellow);
+  font-size: 0.72rem;
+}
+
+.neo-setup-info {
+  margin: 0;
+  border: 2px dashed #3a3548;
+  padding: 0.65rem 0.8rem;
+  font-size: 0.88rem;
+  background: #1a1726;
+  border-radius: 4px;
+}
+
+.neo-btn-primary {
+  border: 3px solid #3a3548;
+  border-radius: 4px;
+  background: var(--electric-purple);
+  color: var(--neo-black);
+  font-weight: 900;
+  font-family: inherit;
+  padding: 0.8rem 0.9rem;
+  cursor: pointer;
+}
+
+.neo-btn-primary:hover {
+  background: #b38fff;
+}

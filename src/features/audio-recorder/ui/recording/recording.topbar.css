@@ -1,0 +1,73 @@
+/* ── Recording Top Bar ── */
+.neo-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 4px solid var(--neo-black);
+  background-color: var(--deep-charcoal);
+}
+
+.neo-topbar--recording {
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.neo-topbar-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.85rem;
+}
+
+.neo-topbar-label {
+  font-weight: 800;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  color: var(--electric-yellow);
+}
+
+.neo-topbar-mode {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.neo-status-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border: 2px solid var(--neo-black);
+  background-color: var(--neo-black);
+  color: var(--neon-green);
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  border-radius: 999px;
+}
+
+.neo-status-dot {
+  width: 8px;
+  height: 8px;
+  background-color: currentColor;
+  border-radius: 50%;
+}
+
+.neo-status-dot.is-live {
+  background-color: var(--hot-pink);
+  color: var(--hot-pink);
+  animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0.5;
+    transform: scale(1.5);
+  }
+}

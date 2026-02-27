@@ -1,0 +1,26 @@
+/* ── Design Tokens: Neo-brutalism Dark Mode ── */
+:root {
+  /* Core palette */
+  --deep-charcoal: #1E1B24;
+  --dark-slate: #2A2633;
+  --electric-yellow: #FDC500;
+  --hot-pink: #FF40A0;
+  --electric-purple: #A37DFF;
+  --neon-green: #39FF14;
+  --neo-black: #000000;
+
+  /* Semantic aliases */
+  --neo-bg: var(--deep-charcoal);
+  --neo-fg: #FFFFFF;
+  --neo-panel: var(--dark-slate);
+  --neo-pink: var(--hot-pink);
+  --neo-green: var(--neon-green);
+  --neo-text: #f8f6ff;
+  --neo-muted: rgba(248, 246, 255, 0.5);
+
+  /* Borders & Shadows */
+  --neo-border-width: 4px;
+  --neo-border: var(--neo-border-width) solid var(--neo-black);
+  --neo-shadow: 6px 6px 0 var(--neo-black);
+  --neo-shadow-hover: 10px 10px 0 var(--neo-black);
+}

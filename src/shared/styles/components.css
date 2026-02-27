@@ -1,0 +1,45 @@
+/* ── Shared Components: Placeholder & Badge ── */
+.neo-temp-placeholder {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.neo-temp-placeholder h2 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 900;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  text-shadow: 4px 4px 0 var(--electric-purple);
+  -webkit-text-stroke: 2px var(--neo-black);
+  color: white;
+}
+
+.neo-temp-placeholder p {
+  font-size: 1.2rem;
+  font-weight: 600;
+  max-width: 500px;
+  border: var(--neo-border);
+  padding: 1rem;
+  background: var(--dark-slate);
+  color: white;
+  box-shadow: 6px 6px 0 var(--neo-black);
+}
+
+.neo-badge {
+  background-color: var(--electric-yellow);
+  color: var(--neo-black);
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  border: var(--neo-border);
+  box-shadow: 4px 4px 0 var(--neo-black);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}

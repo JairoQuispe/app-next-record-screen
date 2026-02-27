@@ -1,0 +1,138 @@
+/* ── Config Popup (minimal, above rec bar) ── */
+.neo-config-popup {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.neo-config-popup-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.neo-config-source {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: inherit;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.neo-config-source svg {
+  width: 16px;
+  height: 16px;
+}
+
+.neo-config-source:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.neo-config-source.is-on {
+  border-color: var(--neon-green);
+  color: var(--neon-green);
+  background: rgba(57, 255, 20, 0.08);
+}
+
+.neo-config-source:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.neo-config-permit-btn {
+  width: 100%;
+  padding: 0.5rem;
+  border: 2px solid var(--electric-purple);
+  border-radius: 4px;
+  background: rgba(163, 125, 255, 0.1);
+  color: var(--electric-purple);
+  font-family: inherit;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.neo-config-permit-btn:hover {
+  background: rgba(163, 125, 255, 0.2);
+}
+
+.neo-config-device {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.neo-config-mic-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  text-align: left;
+}
+
+.neo-config-mic-option:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.neo-config-mic-option.is-selected {
+  border-color: var(--neon-green);
+  background: rgba(57, 255, 20, 0.06);
+  color: #fff;
+}
+
+.neo-config-mic-icon {
+  display: block;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+.neo-config-mic-option.is-selected .neo-config-mic-icon {
+  opacity: 1;
+  color: var(--neon-green);
+}
+
+.neo-config-mic-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.neo-config-mic-check {
+  display: block;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  color: var(--neon-green);
+}

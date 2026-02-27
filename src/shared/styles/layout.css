@@ -1,0 +1,21 @@
+/* ── App Container & Shell Layout ── */
+.neo-app-container {
+  position: relative;
+  min-height: 100vh;
+  padding-top: var(--neo-titlebar-height, 0px);
+  background-color: var(--neo-bg);
+  background-image: radial-gradient(var(--dark-slate) 2px, transparent 2px);
+  background-size: 24px 24px;
+  box-sizing: border-box;
+}
+
+:root[data-tauri="true"] .neo-app-container {
+  min-height: calc(100vh - var(--neo-titlebar-height, 0px));
+  padding-top: var(--neo-titlebar-height, 0px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+:root[data-tauri="true"] .neo-app-shell {
+  min-height: calc(100vh - var(--neo-titlebar-height, 0px));
+}

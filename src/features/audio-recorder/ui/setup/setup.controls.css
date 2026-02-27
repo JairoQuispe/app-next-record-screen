@@ -1,0 +1,301 @@
+/* ── Recording Controls (bottom bar) ── */
+.neo-setup-rec-controls {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 50;
+  background-color: rgba(30, 27, 36, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 3px solid var(--neo-black);
+}
+
+/* Visualizer inside bottom bar */
+.neo-setup-visualizer--bar {
+  width: 100%;
+  height: 80px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  position: relative;
+}
+
+.neo-setup-visualizer--bar .neo-viz-bars {
+  width: 100%;
+  height: 100%;
+}
+
+/* Buttons row */
+.neo-setup-rec-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 2rem;
+  width: 100%;
+}
+
+/* Config button */
+.neo-setup-config-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 0;
+  background-color: #f3cf2e;
+  border: 4px solid var(--neo-black);
+  color: var(--neo-black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 5px 5px 0 var(--neo-black);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.neo-setup-config-btn:hover {
+  background-color: #ffd93b;
+  transform: translateY(-1px);
+  box-shadow: 6px 6px 0 var(--neo-black);
+}
+
+.neo-setup-config-btn svg {
+  width: 30px;
+  height: 30px;
+  color: var(--neo-black);
+}
+
+/* Gear button (right side) */
+.neo-setup-gear-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 0;
+  background-color: #f3cf2e;
+  border: 4px solid var(--neo-black);
+  color: var(--neo-black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 5px 5px 0 var(--neo-black);
+  transition: all 0.2s ease;
+  position: relative;
+  font-size: 1.5rem;
+}
+
+.neo-setup-gear-btn:hover {
+  background-color: #ffd93b;
+  transform: translateY(-1px);
+  box-shadow: 6px 6px 0 var(--neo-black);
+}
+
+.neo-setup-gear-btn svg {
+  width: 30px;
+  height: 30px;
+  color: var(--neo-black);
+  display: block;
+  flex-shrink: 0;
+}
+
+.neo-setup-gear-btn .neo-gear-icon {
+  fill: none;
+  stroke: var(--neo-black);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Safari mobile specific fixes */
+@supports (-webkit-appearance: none) {
+  .neo-setup-gear-btn svg {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+}
+
+/* Recording state: Pause button (left) */
+.neo-setup-config-btn--pause,
+.neo-setup-config-btn--resume {
+  background-color: rgba(42, 38, 51, 0.95);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.neo-setup-config-btn--pause:hover,
+.neo-setup-config-btn--resume:hover {
+  background-color: rgba(60, 55, 70, 0.95);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.neo-setup-config-btn--pause svg,
+.neo-setup-config-btn--resume svg {
+  color: #fff;
+}
+
+/* Recording state: Stop button (right) */
+.neo-setup-gear-btn--stop {
+  background-color: rgba(42, 38, 51, 0.95);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.neo-setup-gear-btn--stop:hover {
+  background-color: rgba(60, 55, 70, 0.95);
+  border-color: rgba(234, 42, 51, 0.6);
+}
+
+.neo-setup-gear-btn--stop svg {
+  color: #ea2a33;
+}
+
+/* Recording state: Center stop circle — animated */
+.neo-setup-rec-btn--stop {
+  animation: neo-rec-pulse 1.5s ease-in-out infinite;
+  position: relative;
+}
+
+.neo-setup-rec-btn--stop::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid rgba(234, 42, 51, 0.5);
+  animation: neo-rec-ring 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes neo-rec-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 4px 4px 0 var(--neo-black), 0 0 0 0 rgba(234, 42, 51, 0.4);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 4px 4px 0 var(--neo-black), 0 0 12px 4px rgba(234, 42, 51, 0.25);
+  }
+}
+
+@keyframes neo-rec-ring {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0;
+  }
+}
+
+/* Adjust for Tauri desktop app with titlebar */
+:root[data-tauri="true"] .neo-setup-rec-controls {
+  bottom: 0; /* Full width bar, no adjustment needed */
+}
+
+/* ── Recording Action Buttons ── */
+.neo-setup-rec-btn,
+.neo-setup-pause-btn,
+.neo-setup-stop-btn {
+  width: 100%;
+  border: 3px solid var(--neo-black);
+  border-radius: 4px;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 1rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background-color 0.18s ease, transform 0.12s ease;
+}
+
+.neo-setup-rec-btn {
+  background: #ea2a33;
+  color: var(--neo-black);
+}
+
+.neo-setup-rec-buttons .neo-setup-rec-btn {
+  width: 80px;
+  height: 80px;
+  min-width: 80px;
+  padding: 0;
+  border-radius: 50%;
+  border: 3px solid #ffffff;
+  outline: 3px solid var(--neo-black);
+  outline-offset: 0;
+  background: #ea2a33;
+  box-shadow: 4px 4px 0 var(--neo-black);
+}
+
+.neo-setup-rec-btn:hover:not(:disabled) {
+  background: #ff4450;
+  transform: translateY(-1px);
+}
+
+/* Specific hover for circular REC button */
+.neo-setup-rec-buttons .neo-setup-rec-btn:hover:not(:disabled) {
+  background: #ff4450;
+  transform: translateY(-1px);
+  border-color: white;
+  box-shadow: 6px 6px 0 var(--neo-black);
+}
+
+.neo-setup-rec-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.neo-setup-rec-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.neo-rec-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--neo-black);
+}
+
+/* Adjust dot size for circular REC button */
+.neo-setup-rec-buttons .neo-rec-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--neo-black);
+}
+
+.neo-setup-pause-btn {
+  background: var(--electric-yellow);
+  color: var(--neo-black);
+}
+
+.neo-setup-pause-btn:hover {
+  background: #ffe040;
+  transform: translateY(-1px);
+}
+
+.neo-setup-pause-btn:active {
+  transform: translateY(1px);
+}
+
+.neo-setup-stop-btn {
+  background: #e74c3c;
+  color: #fff;
+}
+
+.neo-setup-stop-btn:hover {
+  background: #f25d4e;
+  transform: translateY(-1px);
+}
+
+.neo-setup-stop-btn:active {
+  transform: translateY(1px);
+}

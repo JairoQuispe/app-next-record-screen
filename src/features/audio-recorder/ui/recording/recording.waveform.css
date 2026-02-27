@@ -1,0 +1,79 @@
+/* ── Waveform & Spectrum Visualization ── */
+.neo-waveform,
+.neo-spectrum {
+  display: flex;
+  height: 92px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border: 2px solid var(--neo-black);
+  background: #050507;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.04);
+}
+
+.neo-waveform-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.neo-waveform-path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.neo-waveform-path--top {
+  stroke: rgba(245, 245, 245, 0.92);
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.16));
+}
+
+.neo-waveform-path--bottom {
+  stroke: rgba(255, 20, 20, 0.9);
+  filter: drop-shadow(0 0 6px rgba(255, 0, 0, 0.2));
+}
+
+.neo-waveform-col {
+  width: 3px;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  align-items: stretch;
+  justify-items: center;
+}
+
+.neo-waveform-bar {
+  width: 100%;
+  border-radius: 1px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55);
+}
+
+.neo-waveform-bar--top {
+  align-self: end;
+  background: rgba(245, 245, 245, 0.92);
+  box-shadow:
+    0 0 12px rgba(255, 255, 255, 0.18),
+    0 0 0 1px rgba(0, 0, 0, 0.55);
+}
+
+.neo-waveform-bar--bottom {
+  align-self: start;
+  background: rgba(255, 20, 20, 0.9);
+  box-shadow:
+    0 0 12px rgba(255, 0, 0, 0.22),
+    0 0 0 1px rgba(0, 0, 0, 0.55);
+}
+
+/* Backward compatibility if any view still renders the old spectrum bars */
+.neo-spectrum-bar {
+  width: 3px;
+  background: rgba(245, 245, 245, 0.92);
+  min-height: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.55);
+  border-radius: 1px;
+  transform-origin: center;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.18);
+  transition: height 80ms linear, transform 80ms linear, opacity 80ms linear, filter 80ms linear;
+}

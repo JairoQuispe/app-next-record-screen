@@ -1,0 +1,61 @@
+/* ── Hero: Duration + Recording Live ── */
+.neo-setup-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.neo-setup-hero-label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--electric-yellow);
+}
+
+.neo-setup-hero-time {
+  font-size: clamp(3rem, 8vw, 4.5rem);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.neo-setup-hero-time.is-recording {
+  color: var(--neon-green);
+}
+
+.neo-setup-hero-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.neo-setup-hero-status.is-recording {
+  color: var(--hot-pink);
+}
+
+.neo-setup-hero-status.is-paused {
+  color: var(--electric-yellow);
+}
+
+.neo-setup-hero-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--hot-pink);
+  animation: setup-pulse 1s infinite alternate;
+}
+
+@keyframes setup-pulse {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0.45; transform: scale(1.4); }
+}

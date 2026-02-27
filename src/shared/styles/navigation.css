@@ -1,0 +1,89 @@
+/* ── Back Button & Titlebar Back ── */
+.neo-back-button {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.9rem;
+  border: 3px solid var(--neo-black);
+  background: rgba(42, 38, 51, 0.95);
+  backdrop-filter: blur(8px);
+  color: var(--neo-fg);
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--neo-black);
+  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.neo-back-arrow {
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.neo-back-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.neo-back-button:hover,
+.neo-back-button:focus-visible {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 var(--neo-black);
+  background: #e8d2a3;
+  color: var(--neo-black);
+  outline: none;
+}
+
+.neo-back-button:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--neo-black);
+}
+
+/* Mobile: Icon only */
+@media (max-width: 480px) {
+  .neo-back-label {
+    display: none;
+  }
+
+  .neo-back-button {
+    padding: 0.5rem;
+  }
+}
+
+/* ── Titlebar Back Button ── */
+.neo-titlebar-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0 12px;
+  height: var(--neo-titlebar-height);
+  border: none;
+  background: var(--dark-slate);
+  color: var(--neo-fg);
+  font-weight: 800;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.neo-titlebar-back:hover,
+.neo-titlebar-back:focus-visible {
+  background: #e8d2a3;
+  color: var(--neo-black);
+  outline: none;
+}
+
+.neo-titlebar-back:active {
+  transform: none;
+  box-shadow: none;
+}
