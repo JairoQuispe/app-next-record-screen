@@ -86,7 +86,11 @@ function App() {
         <div className="neo-app-container">
           {!isTauri && (
             <button className="neo-back-button" onClick={handleBackToSelection}>
-              <span className="neo-back-icon">←</span> VOLVER
+              <svg className="neo-back-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" width="18" height="18" aria-hidden="true">
+                <path d="M19 12H5" />
+                <path d="M12 19l-7-7 7-7" />
+              </svg>
+              <span className="neo-back-label">VOLVER</span>
             </button>
           )}
           <AudioRecorderPage />
@@ -106,7 +110,11 @@ function App() {
         <div className="neo-app-container">
           {!isTauri && (
             <button className="neo-back-button" onClick={handleBackToSelection}>
-              <span className="neo-back-icon">←</span> VOLVER
+              <svg className="neo-back-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" width="18" height="18" aria-hidden="true">
+                <path d="M19 12H5" />
+                <path d="M12 19l-7-7 7-7" />
+              </svg>
+              <span className="neo-back-label">VOLVER</span>
             </button>
           )}
           <div className="neo-temp-placeholder">

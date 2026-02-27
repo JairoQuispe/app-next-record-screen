@@ -72,60 +72,59 @@ body,
 /* Neo-Brutalism Back Button - Fixed position */
 .neo-back-button {
   position: fixed;
-  top: calc(var(--neo-titlebar-height, 44px) + 0.5rem);
-  left: 1rem;
+  top: 0.75rem;
+  left: 0.75rem;
   z-index: 1000;
-  background-color: var(--dark-slate);
-  color: var(--neo-fg);
-  border: var(--neo-border);
-  padding: 0.75rem 1.25rem;
-  font-weight: 800;
-  font-size: 0.9rem;
-  letter-spacing: 0.05em;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  box-shadow: 4px 4px 0 var(--neo-black);
-  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
-  text-transform: uppercase;
+  gap: 0.35rem;
+  padding: 0.45rem 0.7rem;
+  border: 3px solid var(--neo-black);
+  background: rgba(42, 38, 51, 0.95);
   backdrop-filter: blur(8px);
-  background-color: rgba(42, 38, 51, 0.95);
+  color: var(--neo-fg);
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--neo-black);
+  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.neo-back-arrow {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.neo-back-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
 }
 
 .neo-back-button:hover,
 .neo-back-button:focus-visible {
   transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0 var(--neo-black);
-  background-color: #e8d2a3;
+  box-shadow: 5px 5px 0 var(--neo-black);
+  background: #e8d2a3;
   color: var(--neo-black);
   outline: none;
 }
 
 .neo-back-button:active {
-  transform: translate(4px, 4px);
+  transform: translate(3px, 3px);
   box-shadow: 0 0 0 var(--neo-black);
 }
 
-.neo-back-icon {
-  font-size: 1.2rem;
-  font-weight: bold;
-}
-
-/* Mobile: Hide text "VOLVER", show only arrow */
+/* Mobile: Icon only */
 @media (max-width: 480px) {
-  .neo-back-button {
-    font-size: 0;
-    padding: 0.75rem;
-    min-width: 48px;
-    width: 48px;
-    height: 48px;
-    justify-content: center;
+  .neo-back-label {
+    display: none;
   }
-  
-  .neo-back-icon {
-    font-size: 1.2rem;
-    margin: 0;
+
+  .neo-back-button {
+    padding: 0.5rem;
   }
 }
 
