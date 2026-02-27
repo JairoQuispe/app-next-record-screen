@@ -78,7 +78,7 @@ body,
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.45rem 0.7rem;
+  padding: 0.45rem 0.9rem;
   border: 3px solid var(--neo-black);
   background: rgba(42, 38, 51, 0.95);
   backdrop-filter: blur(8px);
@@ -90,8 +90,8 @@ body,
 
 .neo-back-arrow {
   display: block;
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
 }
 
