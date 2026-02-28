@@ -66,6 +66,7 @@ export function useSetupScreen({ recorder, nativeWavPath }: UseSetupScreenOption
   const isStopped = status === "stopped";
   const isIdle = status === "idle" || status === "error";
   const isBusy = isRecording || isPaused;
+  const isRealtimeTranscriptionActive = transcriptionEnabled && isBusy;
 
   // ── Mic preview & visualizer levels ──
   const previewEnabled = !isBusy && usesMicrophone && microphonePermission === "granted";
@@ -76,7 +77,7 @@ export function useSetupScreen({ recorder, nativeWavPath }: UseSetupScreenOption
   const vizActive = isBusy || isMicPreviewActive;
 
   // ── Transcription & diarization ──
-  const transcription = useTranscription(isBusy, recordingStream, "es");
+  const transcription = useTranscription(isRealtimeTranscriptionActive, recordingStream, "es");
   const diarization = useSpeakerDiarization("es");
   const { startDiarization } = diarization;
   const { enhance } = noiseSuppression;
@@ -89,7 +90,7 @@ export function useSetupScreen({ recorder, nativeWavPath }: UseSetupScreenOption
   // ── Auto-trigger diarization + noise suppression on stop ──
   useEffect(() => {
     const wasBusy = prevStatusRef.current === "recording" || prevStatusRef.current === "paused";
-    if (wasBusy && status === "stopped" && audioUrl) {
+    if (transcriptionEnabled && wasBusy && status === "stopped" && audioUrl) {
       startDiarization(audioUrl);
       setActiveTab("speakers");
       if (denoiseEnabled && denoiseIntensity > 0) {
@@ -107,6 +108,7 @@ export function useSetupScreen({ recorder, nativeWavPath }: UseSetupScreenOption
     normalizeEnabled,
     startDiarization,
     status,
+    transcriptionEnabled,
   ]);
 
   // ── Source toggles (stable callbacks for memoized children) ──

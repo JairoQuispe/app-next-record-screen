@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   TranscriptionBackend,
   TranscriptionState,
@@ -6,10 +6,11 @@ import type {
   InferenceDevice,
 } from "../lib/transcription/types";
 import { isTauriRuntime } from "@shared/lib/runtime/isTauriRuntime";
-import {
-  nativeTranscriptionLoadModel,
-  nativeTranscriptionTranscribe,
-} from "@shared/lib/runtime/tauriAudioCapture";
+import { createTranscriptionStateMachine } from "./transcriptionStateMachine";
+import { createTranscriptionWorker, terminateTranscriptionWorker } from "./transcriptionWorkerPipeline";
+import { loadNativeTranscriptionModel, transcribeNativeChunk } from "./transcriptionProviderRuntime";
+import { toErrorMessage } from "./transcriptionText";
+import { startTranscriptionCapture, stopTranscriptionCapture } from "./transcriptionCaptureLifecycle";
 
 const IS_TAURI = isTauriRuntime();
 
@@ -17,90 +18,9 @@ const CHUNK_DURATION_S = 3;
 const SAMPLE_RATE = 16000;
 const MIN_CHUNK_S = 0.75;
 const CHUNK_OVERLAP_S = 1;
-const HALLUCINATION_REPEAT_THRESHOLD = 3;
-const MIN_UNIQUE_WORDS_RATIO = 0.25;
 
 const CHUNK_OVERLAP_SAMPLES = Math.floor(CHUNK_OVERLAP_S * SAMPLE_RATE);
 const MIN_CHUNK_SAMPLES = Math.floor(MIN_CHUNK_S * SAMPLE_RATE);
-
-function normalizeSegment(text: string): string {
-  return text.replace(/\s+/g, " ").trim();
-}
-
-/**
- * Detect hallucinated ASR output (repetitive phrases in mixed languages).
- */
-function isHallucination(text: string): boolean {
-  if (!text || text.length < 20) return false;
-  const words = text.toLowerCase().split(/\s+/).filter(w => w.length > 1);
-  if (words.length < 4) return false;
-
-  // Low unique word ratio = hallucination loop
-  const unique = new Set(words);
-  if (unique.size / words.length < MIN_UNIQUE_WORDS_RATIO) return true;
-
-  // Repeated 3-grams
-  const ngrams = new Map<string, number>();
-  for (let i = 0; i <= words.length - 3; i++) {
-    const gram = words.slice(i, i + 3).join(" ");
-    const count = (ngrams.get(gram) ?? 0) + 1;
-    ngrams.set(gram, count);
-    if (count >= HALLUCINATION_REPEAT_THRESHOLD) return true;
-  }
-
-  return false;
-}
-
-function mergeWithLastSegment(previous: string, incoming: string): string {
-  const normalizedIncoming = normalizeSegment(incoming);
-  if (!normalizedIncoming) return previous;
-
-  if (!previous.trim()) {
-    return normalizedIncoming;
-  }
-
-  const lines = previous.split("\n");
-  const lastIndex = lines.length - 1;
-  const normalizedLast = normalizeSegment(lines[lastIndex] ?? "");
-
-  if (!normalizedLast) {
-    lines[lastIndex] = normalizedIncoming;
-    return lines.join("\n");
-  }
-
-  if (normalizedIncoming === normalizedLast) {
-    return previous;
-  }
-
-  // If overlap causes the new segment to extend the previous one, replace last line.
-  if (normalizedIncoming.startsWith(normalizedLast)) {
-    lines[lastIndex] = normalizedIncoming;
-    return lines.join("\n");
-  }
-
-  // If new segment is a shorter repeat, ignore it.
-  if (normalizedLast.startsWith(normalizedIncoming)) {
-    return previous;
-  }
-
-  return `${previous}\n${normalizedIncoming}`;
-}
-
-function toErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (typeof error === "object" && error !== null && "message" in error) {
-    return String((error as { message: unknown }).message);
-  }
-  return String(error);
-}
-
-function toTranscriptionText(raw: unknown): string {
-  if (typeof raw === "string") return raw;
-  if (typeof raw === "object" && raw !== null && "message" in raw) {
-    return String((raw as Record<string, unknown>).message);
-  }
-  return String(raw);
-}
 
 /**
  * Unified real-time transcription hook with provider abstraction.
@@ -153,81 +73,52 @@ export function useTranscription(
     }
   }, []);
 
-  const beginChunkProcessing = useCallback(() => {
-    setIsProcessing(true);
-    setInterimText("Transcribiendo...");
-    isChunkInFlightRef.current = true;
-  }, []);
-
-  const endChunkProcessing = useCallback((clearModelLoading = false) => {
-    setIsProcessing(false);
-    isChunkInFlightRef.current = false;
-    setInterimText("");
-    if (clearModelLoading) {
-      setIsModelLoading(false);
-    }
-    clearInferenceTimeout();
-  }, [clearInferenceTimeout]);
-
-  const appendFinalText = useCallback((text?: string) => {
-    if (!text || !text.trim() || isHallucination(text)) return;
-
-    setFinalText((prev) => {
-      const next = mergeWithLastSegment(prev, text);
-      lastContextRef.current = next.split("\n").slice(-3).join(" ");
-      return next;
-    });
-  }, []);
+  const { beginChunkProcessing, endChunkProcessing, appendFinalText } = useMemo(
+    () =>
+      createTranscriptionStateMachine({
+        setIsProcessing,
+        setInterimText,
+        setIsModelLoading,
+        setFinalText,
+        isChunkInFlightRef,
+        lastContextRef,
+        clearInferenceTimeout,
+      }),
+    [clearInferenceTimeout],
+  );
 
   const getWorker = useCallback(() => {
     if (workerRef.current) return workerRef.current;
 
-    let worker: Worker;
-
-    // whisper-native is not yet implemented — fall back to web worker.
-    if (backendRef.current === "whisper-native") {
-      console.warn("[useTranscription] whisper-native not yet implemented, using moonshine-local");
-    }
-
-    worker = new Worker(
-      new URL("../lib/whisper.worker.ts", import.meta.url),
-      { type: "module" },
-    );
-
-    worker.onerror = (evt) => {
-      console.error("[useTranscription] Worker crashed:", evt.message);
-      endChunkProcessing();
-      setError(evt.message ?? "Worker crashed");
-    };
-
-    worker.onmessage = (event: MessageEvent) => {
-      const data = event.data as { type: string; text?: string; error?: string; progress?: number };
-
-      switch (data.type) {
-        case "loading":
-          setIsModelLoading(true);
-          setLoadProgress(data.progress ?? 0);
-          break;
-        case "ready":
-          setIsModelLoading(false);
-          setIsModelReady(true);
-          modelReadyRef.current = true;
-          setLoadProgress(100);
-          setActiveDevice("wasm");
-          setActiveBackend(backendRef.current);
-          console.log("[useTranscription] Model ready (web worker)");
-          break;
-        case "result":
-          endChunkProcessing();
-          appendFinalText(data.text);
-          break;
-        case "error":
-          endChunkProcessing(true);
-          console.error("[useTranscription] Worker error:", data.error);
-          setError(data.error ?? "Unknown error");
-          break;
-      }
-    };
+    const worker = createTranscriptionWorker(backendRef.current, {
+      onLoading: (progress) => {
+        setIsModelLoading(true);
+        setLoadProgress(progress);
+      },
+      onReady: () => {
+        setIsModelLoading(false);
+        setIsModelReady(true);
+        modelReadyRef.current = true;
+        setLoadProgress(100);
+        setActiveDevice("wasm");
+        setActiveBackend(backendRef.current);
+        console.log("[useTranscription] Model ready (web worker)");
+      },
+      onResult: (text) => {
+        endChunkProcessing();
+        appendFinalText(text);
+      },
+      onError: (workerError) => {
+        endChunkProcessing(true);
+        console.error("[useTranscription] Worker error:", workerError);
+        setError(workerError ?? "Unknown error");
+      },
+      onCrash: (message) => {
+        console.error("[useTranscription] Worker crashed:", message);
+        endChunkProcessing();
+        setError(message);
+      },
+    });
 
     workerRef.current = worker;
     return worker;
@@ -240,7 +131,7 @@ export function useTranscription(
     setLoadProgress(0);
     try {
       console.log("[useTranscription] Loading native Moonshine model...");
-      await nativeTranscriptionLoadModel();
+      await loadNativeTranscriptionModel();
       setIsModelLoading(false);
       setIsModelReady(true);
       modelReadyRef.current = true;
@@ -261,9 +152,7 @@ export function useTranscription(
     beginChunkProcessing();
 
     try {
-      const audioArray = Array.from(merged);
-      const raw = await nativeTranscriptionTranscribe(audioArray, language);
-      const text = toTranscriptionText(raw);
+      const text = await transcribeNativeChunk(merged, language);
       endChunkProcessing();
       appendFinalText(text);
     } catch (e: unknown) {
@@ -320,88 +209,50 @@ export function useTranscription(
   }, [beginChunkProcessing, clearInferenceTimeout, endChunkProcessing, getWorker, isNativeBackend, sendChunkNative, language]);
 
   const startCapture = useCallback(async (mediaStream: MediaStream) => {
-    // Clean up any existing capture
-    workletNodeRef.current?.disconnect();
-    sourceNodeRef.current?.disconnect();
-    if (audioCtxRef.current) {
-      void audioCtxRef.current.close();
-    }
+    await startTranscriptionCapture(
+      mediaStream,
+      {
+        audioCtxRef,
+        sourceNodeRef,
+        workletNodeRef,
+        audioBufferRef,
+        chunkTimerRef,
+        isChunkInFlightRef,
+        lastContextRef,
+      },
+      sendChunk,
+      SAMPLE_RATE,
+      CHUNK_DURATION_S,
+    );
 
-    const audioCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
-    const source = audioCtx.createMediaStreamSource(mediaStream);
-
-    // AudioWorkletNode replaces deprecated ScriptProcessorNode
-    // Inline the processor code as a Blob URL to avoid separate file management
-    const processorCode = `
-      class PcmCaptureProcessor extends AudioWorkletProcessor {
-        process(inputs) {
-          const input = inputs[0];
-          if (input && input[0] && input[0].length > 0) {
-            this.port.postMessage(new Float32Array(input[0]));
-          }
-          return true;
-        }
-      }
-      registerProcessor("pcm-capture-processor", PcmCaptureProcessor);
-    `;
-    const blob = new Blob([processorCode], { type: "application/javascript" });
-    const workletUrl = URL.createObjectURL(blob);
-
-    try {
-      await audioCtx.audioWorklet.addModule(workletUrl);
-    } finally {
-      URL.revokeObjectURL(workletUrl);
-    }
-
-    const workletNode = new AudioWorkletNode(audioCtx, "pcm-capture-processor");
-    workletNode.port.onmessage = (e: MessageEvent<Float32Array>) => {
-      audioBufferRef.current.push(e.data);
-    };
-
-    source.connect(workletNode);
-
-    audioCtxRef.current = audioCtx;
-    sourceNodeRef.current = source;
-    workletNodeRef.current = workletNode;
-
-    // Send chunks at reduced interval (1.5s vs old 3s)
-    chunkTimerRef.current = window.setInterval(sendChunk, CHUNK_DURATION_S * 1000);
-
-    console.log("[useTranscription] Audio capture started, sampleRate:", audioCtx.sampleRate, "backend:", backendRef.current);
+    console.log(
+      "[useTranscription] Audio capture started, sampleRate:",
+      audioCtxRef.current?.sampleRate,
+      "backend:",
+      backendRef.current,
+    );
   }, [sendChunk]);
 
   const stopCapture = useCallback(() => {
-    if (chunkTimerRef.current !== null) {
-      window.clearInterval(chunkTimerRef.current);
-      chunkTimerRef.current = null;
-    }
-    clearInferenceTimeout();
-
-    // Send any remaining audio
-    sendChunk();
-
-    workletNodeRef.current?.disconnect();
-    sourceNodeRef.current?.disconnect();
-    workletNodeRef.current = null;
-    sourceNodeRef.current = null;
-
-    if (audioCtxRef.current) {
-      void audioCtxRef.current.close();
-      audioCtxRef.current = null;
-    }
-
-    audioBufferRef.current = [];
-    setIsProcessing(false);
-    isChunkInFlightRef.current = false;
-    lastContextRef.current = "";
-    setInterimText("");
+    stopTranscriptionCapture(
+      {
+        audioCtxRef,
+        sourceNodeRef,
+        workletNodeRef,
+        audioBufferRef,
+        chunkTimerRef,
+        isChunkInFlightRef,
+        lastContextRef,
+      },
+      sendChunk,
+      clearInferenceTimeout,
+      setIsProcessing,
+      setInterimText,
+    );
   }, [clearInferenceTimeout, sendChunk]);
 
   const terminateWorker = useCallback((resetModelReady: boolean) => {
-    if (workerRef.current) {
-      workerRef.current.terminate();
-      workerRef.current = null;
-    }
+    terminateTranscriptionWorker(workerRef);
 
     if (resetModelReady) {
       modelReadyRef.current = false;
