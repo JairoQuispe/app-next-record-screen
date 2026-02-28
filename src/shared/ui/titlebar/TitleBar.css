@@ -20,7 +20,7 @@
 
 .neo-titlebar-drag {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   position: relative;
   padding: 0 12px 0 0;
   gap: 10px;
@@ -28,9 +28,14 @@
 
 .neo-titlebar-left {
   display: inline-flex;
-  align-items: center;
+  align-items: stretch;
   width: 100%;
   gap: 0;
+}
+
+.neo-titlebar-left-action {
+  display: inline-flex;
+  align-items: stretch;
 }
 
 
@@ -42,7 +47,8 @@
   color: var(--neo-titlebar-fg, #ffffff);
   font-size: 1.2rem;
   position: absolute;
-  left: 50%;
+  left: 60%;
+  top:5px;
   transform: translateX(-50%);
   padding-left: 0;
   text-align: center;
@@ -51,6 +57,13 @@
 
 .neo-titlebar-controls {
   display: flex;
+  align-items: stretch;
+}
+
+.neo-titlebar-controls-left-action {
+  margin-right: 6px;
+  display: inline-flex;
+  align-items: stretch;
 }
 
 .neo-titlebar-btn {

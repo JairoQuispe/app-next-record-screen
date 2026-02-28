@@ -35,9 +35,15 @@ interface TitleBarProps {
   title?: string;
   backgroundColor?: string;
   leftAction?: ReactNode;
+  controlsLeftAction?: ReactNode;
 }
 
-export const TitleBar = memo(function TitleBar({ title, backgroundColor, leftAction }: TitleBarProps) {
+export const TitleBar = memo(function TitleBar({
+  title,
+  backgroundColor,
+  leftAction,
+  controlsLeftAction,
+}: TitleBarProps) {
   const [appWindow, setAppWindow] = useState<WindowControls | null>(null);
 
   useEffect(() => {
@@ -60,8 +66,8 @@ export const TitleBar = memo(function TitleBar({ title, backgroundColor, leftAct
       mounted = false;
     };
   }, []);
-  const resolvedTitle = title ?? "RECOGNI";
-  const isHomeTitle = !title || resolvedTitle === "RECOGNI";
+  const resolvedTitle = title ?? "RECOGNING";
+  const isHomeTitle = !title || resolvedTitle === "RECOGNING";
   const style = useMemo<CSSProperties | undefined>(
     () =>
       ({
@@ -103,6 +109,9 @@ export const TitleBar = memo(function TitleBar({ title, backgroundColor, leftAct
       </div>
 
       <div className="neo-titlebar-controls">
+        {controlsLeftAction ? (
+          <div className="neo-titlebar-controls-left-action">{controlsLeftAction}</div>
+        ) : null}
         <button
           type="button"
           className="neo-titlebar-btn neo-titlebar-btn--minimize"

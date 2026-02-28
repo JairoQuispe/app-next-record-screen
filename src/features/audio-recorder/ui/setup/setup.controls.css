@@ -172,6 +172,28 @@
     -webkit-transform: translateZ(0);
     transform: translateZ(0);
   }
+  
+  /* iPhone/iOS specific fixes for round recording button */
+  .neo-setup-rec-buttons .neo-setup-rec-btn {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-border-radius: 50%;
+    border-radius: 50%;
+  }
+  
+  /* Ensure perfect circle on iOS */
+  @supports (-webkit-touch-callout: none) {
+    .neo-setup-rec-buttons .neo-setup-rec-btn {
+      -webkit-appearance: none;
+      appearance: none;
+      -webkit-border-radius: 50%;
+      border-radius: 50%;
+      -webkit-transform: scale(1);
+      transform: scale(1);
+    }
+  }
 }
 
 /* Recording state: Pause button (left) */

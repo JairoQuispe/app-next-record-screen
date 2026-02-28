@@ -4,7 +4,7 @@ import "./AnonButton.css";
 interface AnonButtonProps {
   onClick: () => void;
   variant?: "full" | "mask";
-  position?: "top-center" | "top-right";
+  position?: "top-center" | "top-right" | "titlebar-controls" | "titlebar-left";
 }
 
 export const AnonButton = memo(function AnonButton({
@@ -16,6 +16,8 @@ export const AnonButton = memo(function AnonButton({
     "neo-anon-btn",
     variant === "mask" ? "neo-anon-btn--mask" : "",
     position === "top-right" ? "neo-anon-btn--top-right" : "",
+    position === "titlebar-controls" ? "neo-anon-btn--titlebar-controls" : "",
+    position === "titlebar-left" ? "neo-anon-btn--titlebar-left" : "",
   ]
     .filter(Boolean)
     .join(" ");

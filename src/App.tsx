@@ -65,7 +65,7 @@ function App() {
 
     if (IS_TAURI) {
       setTitleBarState({
-        title: "GRABAR AUDIO",
+        title: "RECOGNING / AUDIO",
         backgroundColor: "#19c4ae",
       });
     }
@@ -93,13 +93,30 @@ function App() {
     </button>
   );
 
+  const homeTitleBarAnonButton = IS_TAURI ? (
+    <AnonButton
+      onClick={() => console.log("Anon button clicked")}
+      variant="full"
+      position="titlebar-left"
+    />
+  ) : undefined;
+
   if (mode === "audio" || mode === "screen") {
+    const titleBarAnonButton = IS_TAURI ? (
+      <AnonButton
+        onClick={() => console.log("Anon button clicked")}
+        variant="mask"
+        position="titlebar-controls"
+      />
+    ) : null;
+
     return (
       <>
         <TitleBar
           title={titleBarState.title}
           backgroundColor={titleBarState.backgroundColor}
           leftAction={backButton}
+          controlsLeftAction={titleBarAnonButton}
         />
         <div className="neo-app-container">
           {!IS_TAURI && (
@@ -111,11 +128,13 @@ function App() {
               <span className="neo-back-label">VOLVER</span>
             </button>
           )}
-          <AnonButton
-            onClick={() => console.log("Anon button clicked")}
-            variant="mask"
-            position="top-right"
-          />
+          {!IS_TAURI && (
+            <AnonButton
+              onClick={() => console.log("Anon button clicked")}
+              variant="mask"
+              position="top-right"
+            />
+          )}
           {mode === "audio" ? (
             <Suspense fallback={null}>
               <AudioRecorderPage />
@@ -134,11 +153,15 @@ function App() {
 
   return (
     <>
-      <TitleBar title={titleBarState.title} backgroundColor={titleBarState.backgroundColor} />
+      <TitleBar
+        title={titleBarState.title}
+        backgroundColor={titleBarState.backgroundColor}
+        leftAction={homeTitleBarAnonButton}
+      />
       <SelectionPage
         onSelectAudio={handleSelectAudio}
         onSelectScreen={handleSelectScreen}
-        onAnonClick={() => console.log("Anon button clicked")}
+        onAnonClick={!IS_TAURI ? () => console.log("Anon button clicked") : undefined}
       />
     </>
   );
