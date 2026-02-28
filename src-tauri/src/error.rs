@@ -29,6 +29,15 @@ pub enum AppError {
 
     #[error("Audio enhancement error: {0}")]
     AudioEnhance(String),
+
+    #[error("Transcription error: {0}")]
+    Transcription(String),
+
+    #[error("Model download error: {0}")]
+    ModelDownload(String),
+
+    #[error("Model not loaded")]
+    ModelNotLoaded,
 }
 
 impl AppError {
@@ -44,6 +53,9 @@ impl AppError {
             Self::AudioCapture(_) => "AUDIO_CAPTURE_ERROR",
             Self::WavEncode(_) => "WAV_ENCODE_ERROR",
             Self::AudioEnhance(_) => "AUDIO_ENHANCE_ERROR",
+            Self::Transcription(_) => "TRANSCRIPTION_ERROR",
+            Self::ModelDownload(_) => "MODEL_DOWNLOAD_ERROR",
+            Self::ModelNotLoaded => "MODEL_NOT_LOADED",
         }
     }
 }

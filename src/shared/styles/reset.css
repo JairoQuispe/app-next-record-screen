@@ -12,10 +12,16 @@ body {
   color: var(--neo-fg);
   font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  overflow: hidden;
 }
 
 html,
 body,
 #root {
   height: 100%;
+}
+
+html,
+#root {
+  overflow: hidden;
 }

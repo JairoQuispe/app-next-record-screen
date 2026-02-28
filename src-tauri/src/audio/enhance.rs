@@ -329,6 +329,7 @@ pub fn denoise_wav(
 
 /// A stateful denoiser that can process audio in streaming fashion.
 /// Designed to be used inside the capture loop without allocations.
+#[allow(dead_code)]
 pub struct RealtimeDenoiser {
     state: Box<DenoiseState<'static>>,
     intensity: f32,
@@ -339,6 +340,7 @@ pub struct RealtimeDenoiser {
     output_frame: [f32; FRAME_SIZE],
 }
 
+#[allow(dead_code)]
 impl RealtimeDenoiser {
     /// Create a new real-time denoiser.
     /// `intensity`: 0.0 to 1.0 — amount of noise suppression.

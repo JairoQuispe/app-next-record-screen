@@ -3,7 +3,8 @@
   align-items: center;
   justify-content: center;
   height: 100vh;
-  width: 100vw;
+  height: 100dvh;
+  width: 100%;
   padding: 0;
   overflow: hidden;
   box-sizing: border-box;
@@ -11,7 +12,7 @@
 }
 
 :root[data-tauri="true"] .neo-app-shell--setup {
-  height: calc(100vh - var(--neo-titlebar-height, 0px));
+  height: calc(100dvh - var(--neo-titlebar-height, 0px));
   width: 100%;
 }
 

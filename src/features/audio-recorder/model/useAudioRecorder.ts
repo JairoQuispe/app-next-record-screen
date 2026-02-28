@@ -101,6 +101,9 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
   const recordedMimeTypeRef = useRef<string | null>(null);
   const nativeWavPathRef = useRef<string | null>(null);
   const timerRef = useRef<number | null>(null);
+  const timerStartRef = useRef<number>(0);
+  const timerPausedAtRef = useRef<number>(0);
+  const timerPausedMsRef = useRef<number>(0);
   const permissionStatusRef = useRef<PermissionStatus | null>(null);
   const spectrumAudioContextRef = useRef<AudioContext | null>(null);
   const mixAudioContextRef = useRef<AudioContext | null>(null);
@@ -137,10 +140,30 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
 
   const startTimer = useCallback(() => {
     stopTimer();
+    timerStartRef.current = Date.now();
+    timerPausedMsRef.current = 0;
+    timerPausedAtRef.current = 0;
     timerRef.current = window.setInterval(() => {
-      setDurationSeconds((previous) => previous + 1);
-    }, 1000);
+      const elapsed = Date.now() - timerStartRef.current - timerPausedMsRef.current;
+      setDurationSeconds(Math.floor(elapsed / 1000));
+    }, 250);
   }, [stopTimer]);
+
+  const pauseTimer = useCallback(() => {
+    timerPausedAtRef.current = Date.now();
+    stopTimer();
+  }, [stopTimer]);
+
+  const resumeTimer = useCallback(() => {
+    if (timerPausedAtRef.current > 0) {
+      timerPausedMsRef.current += Date.now() - timerPausedAtRef.current;
+      timerPausedAtRef.current = 0;
+    }
+    timerRef.current = window.setInterval(() => {
+      const elapsed = Date.now() - timerStartRef.current - timerPausedMsRef.current;
+      setDurationSeconds(Math.floor(elapsed / 1000));
+    }, 250);
+  }, []);
 
   const stopSpectrumMonitor = useCallback(() => {
     if (spectrumTimerRef.current !== null) {
@@ -453,19 +476,19 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     const recorder = mediaRecorderRef.current;
     if (recorder?.state === "recording") {
       recorder.pause();
-      stopTimer();
+      pauseTimer();
       setStatus("paused");
     }
-  }, [stopTimer]);
+  }, [pauseTimer]);
 
   const resumeRecording = useCallback(() => {
     const recorder = mediaRecorderRef.current;
     if (recorder?.state === "paused") {
       recorder.resume();
-      startTimer();
+      resumeTimer();
       setStatus("recording");
     }
-  }, [startTimer]);
+  }, [resumeTimer]);
 
   const saveRecording = useCallback(async () => {
     if (!audioUrl) {

@@ -8,7 +8,7 @@ mod enhance;
 
 #[cfg(windows)]
 pub use capture::SystemAudioHandle;
-pub use enhance::{denoise_wav, RealtimeDenoiser};
+pub use enhance::denoise_wav;
 
 #[cfg(windows)]
 pub fn check_system_audio_available() -> bool {

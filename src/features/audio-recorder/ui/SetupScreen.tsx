@@ -3,7 +3,8 @@ import { MicIcon, MonitorIcon } from "@shared/ui/icons";
 import { formatDuration } from "@shared/lib/utils";
 import { isTauriRuntime } from "@shared/lib/runtime/isTauriRuntime";
 import { useMicrophonePreview } from "../model/useMicrophonePreview";
-import { useWhisperTranscription } from "../model/useWhisperTranscription";
+import { useTranscription } from "../model/useTranscription";
+import type { TranscriptionBackend } from "../lib/transcription/types";
 import { useSpeakerDiarization } from "../model/useSpeakerDiarization";
 import { useAudioSettings } from "../model/useAudioSettings";
 import { useNoiseSuppression } from "../model/useNoiseSuppression";
@@ -275,6 +276,9 @@ export function SetupScreen({ state, actions, nativeWavPath, animateIn }: SetupS
   const [showConfigPanel, setShowConfigPanel] = useState(false);
   const [showGearPanel, setShowGearPanel] = useState(false);
   const [playbackMode, setPlaybackMode] = useState<"original" | "enhanced">("enhanced");
+  const [transcriptionEnabled, setTranscriptionEnabled] = useState(false);
+  const [transcriptionBackend, setTranscriptionBackend] = useState<TranscriptionBackend>("moonshine-local");
+  const [showTranscriptionDetails, setShowTranscriptionDetails] = useState(false);
 
   const noiseSuppression = useNoiseSuppression();
 
@@ -282,9 +286,13 @@ export function SetupScreen({ state, actions, nativeWavPath, animateIn }: SetupS
     denoiseEnabled,
     denoiseIntensity,
     normalizeEnabled,
+    transcriptionEnabled,
+    transcriptionBackend,
     setDenoiseEnabled,
     setDenoiseIntensity,
     setNormalizeEnabled,
+    setTranscriptionEnabled,
+    setTranscriptionBackend,
   );
 
   // Hydrate persisted settings on mount
@@ -316,12 +324,15 @@ export function SetupScreen({ state, actions, nativeWavPath, animateIn }: SetupS
   const vizLevels = isBusy ? spectrumLevels : micLevels;
   const vizActive = isBusy || isMicPreviewActive;
 
-  const transcription = useWhisperTranscription(isBusy, recordingStream, "es");
+  const transcription = useTranscription(transcriptionEnabled && isBusy, recordingStream, "es", transcriptionBackend);
   const diarization = useSpeakerDiarization("es");
   const prevStatusRef = useRef(status);
 
+  const hasTranscriptionContent = transcriptionEnabled &&
+    (isBusy || Boolean(transcription.finalText) || diarization.status !== "idle");
+
   const hasExtraContent =
-    (isBusy || Boolean(transcription.finalText) || diarization.status !== "idle") ||
+    hasTranscriptionContent ||
     Boolean(audioUrl) ||
     !isSupported ||
     Boolean(errorMessage);
@@ -330,8 +341,10 @@ export function SetupScreen({ state, actions, nativeWavPath, animateIn }: SetupS
   useEffect(() => {
     if (prevStatusRef.current === "recording" || prevStatusRef.current === "paused") {
       if (status === "stopped" && audioUrl) {
-        diarization.startDiarization(audioUrl);
-        setActiveTab("speakers");
+        if (transcriptionEnabled) {
+          diarization.startDiarization(audioUrl);
+          setActiveTab("speakers");
+        }
 
         // Auto-trigger noise suppression if enabled
         if (denoiseEnabled && denoiseIntensity > 0) {
@@ -437,31 +450,24 @@ export function SetupScreen({ state, actions, nativeWavPath, animateIn }: SetupS
 
               {usesMicrophone && !isBusy && !shouldShowPermissionAction && availableMicrophones.length > 1 && (
                 <div className="neo-config-device">
-                  {availableMicrophones.map((microphone) => {
-                    const isSelected = microphone.deviceId === selectedMicrophoneId;
-                    return (
-                      <button
-                        key={microphone.deviceId}
-                        type="button"
-                        className={`neo-config-mic-option ${isSelected ? "is-selected" : ""}`}
-                        onClick={() => selectMicrophone(microphone.deviceId)}
-                        aria-label={`Seleccionar ${microphone.label}`}
-                      >
-                        <svg className="neo-config-mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14" aria-hidden="true">
-                          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-                          <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                        </svg>
-                        <span className="neo-config-mic-label">
+                  <label className="neo-config-device-label" htmlFor="microphone-device-select">
+                    MICRÓFONO
+                  </label>
+                  <select
+                    id="microphone-device-select"
+                    className="neo-config-device-select"
+                    value={selectedMicrophoneId ?? ""}
+                    onChange={(event) => selectMicrophone(event.target.value)}
+                    aria-label="Seleccionar micrófono"
+                  >
+                    <optgroup label="DISPOSITIVOS DISPONIBLES">
+                      {availableMicrophones.map((microphone) => (
+                        <option key={microphone.deviceId} value={microphone.deviceId}>
                           {microphone.label || `Micrófono ${microphone.deviceId.slice(0, 5)}...`}
-                        </span>
-                        {isSelected && (
-                          <svg className="neo-config-mic-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" width="12" height="12" aria-hidden="true">
-                            <path d="M5 12l5 5L19 7" />
-                          </svg>
-                        )}
-                      </button>
-                    );
-                  })}
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
                 </div>
               )}
             </div>
@@ -508,6 +514,106 @@ export function SetupScreen({ state, actions, nativeWavPath, animateIn }: SetupS
                     </div>
                   </div>
                 )}
+              </div>
+
+              <div className="neo-gear-section">
+                <div className="neo-gear-row">
+                  <span className="neo-gear-label">TRANSCRIPCIÓN EN VIVO</span>
+                  <button
+                    type="button"
+                    className={`neo-gear-toggle ${transcriptionEnabled ? "is-on" : ""}`}
+                    onClick={() => setTranscriptionEnabled(!transcriptionEnabled)}
+                    aria-pressed={transcriptionEnabled}
+                    aria-label="Activar transcripción en tiempo real"
+                  >
+                    <span className="neo-gear-toggle-knob" />
+                  </button>
+                </div>
+                <p className="neo-gear-desc">
+                  Transcribe el audio en tiempo real usando IA. Incluye identificación de hablantes y resumen.
+                </p>
+
+                <button
+                  type="button"
+                  className={`neo-gear-expand-btn ${showTranscriptionDetails ? "is-open" : ""}`}
+                  onClick={() => setShowTranscriptionDetails(!showTranscriptionDetails)}
+                  aria-expanded={showTranscriptionDetails}
+                >
+                  <span className="neo-gear-expand-arrow" aria-hidden="true">▸</span>
+                  {showTranscriptionDetails ? "Leer menos" : "Leer más"}
+                </button>
+
+                <div className={`neo-gear-details ${showTranscriptionDetails ? "is-open" : ""}`}>
+                  <div className="neo-gear-detail-list">
+                    <div className="neo-gear-detail-item">
+                      <span className="neo-gear-detail-icon" aria-hidden="true">◈</span>
+                      <span><strong>Motor:</strong> {transcriptionBackend === "moonshine-native" ? "Nativo (Moonshine ONNX)" : transcriptionBackend === "moonshine-local" ? "IA Local (Whisper ONNX)" : "Nativo (whisper.cpp)"}</span>
+                    </div>
+                    <div className="neo-gear-detail-item">
+                      <span className="neo-gear-detail-icon" aria-hidden="true">◈</span>
+                      <span><strong>Procesamiento:</strong> 100% en tu dispositivo</span>
+                    </div>
+                    <div className="neo-gear-detail-item">
+                      <span className="neo-gear-detail-icon" aria-hidden="true">◈</span>
+                      <span><strong>Privacidad:</strong> Ningún dato sale de tu equipo</span>
+                    </div>
+                    <div className="neo-gear-detail-item">
+                      <span className="neo-gear-detail-icon" aria-hidden="true">◈</span>
+                      <span><strong>Modelo:</strong> ~120 MB (se descarga una sola vez)</span>
+                    </div>
+                    <div className="neo-gear-detail-item">
+                      <span className="neo-gear-detail-icon" aria-hidden="true">◈</span>
+                      <span><strong>Compatible:</strong> Chrome, Safari, Windows, macOS</span>
+                    </div>
+                  </div>
+
+                  {isTauri && (
+                    <p className="neo-gear-detail-note">
+                      En escritorio el motor nativo whisper.cpp ofrece hasta 10× más velocidad. Se selecciona automáticamente si está disponible.
+                    </p>
+                  )}
+
+                  <div className="neo-gear-motor-section">
+                    <span className="neo-gear-label">MOTOR DE TRANSCRIPCIÓN</span>
+                    <div className="neo-gear-motor-options">
+                      <button
+                        type="button"
+                        className={`neo-gear-motor-btn ${transcriptionBackend === "moonshine-local" ? "is-active" : ""}`}
+                        onClick={() => setTranscriptionBackend("moonshine-local")}
+                      >
+                        <span className="neo-gear-motor-icon" aria-hidden="true">⚡</span>
+                        <span className="neo-gear-motor-label">IA Local</span>
+                        <span className="neo-gear-motor-sub">Whisper ONNX</span>
+                      </button>
+                      {isTauri && (
+                        <button
+                          type="button"
+                          className={`neo-gear-motor-btn ${transcriptionBackend === "moonshine-native" ? "is-active" : ""}`}
+                          onClick={() => setTranscriptionBackend("moonshine-native")}
+                        >
+                          <span className="neo-gear-motor-icon" aria-hidden="true">🖥️</span>
+                          <span className="neo-gear-motor-label">Nativo</span>
+                          <span className="neo-gear-motor-sub">Moonshine</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="neo-gear-motor-btn is-disabled"
+                        disabled
+                        title="Próximamente — motor whisper.cpp en desarrollo"
+                      >
+                        <span className="neo-gear-motor-icon" aria-hidden="true">�</span>
+                        <span className="neo-gear-motor-label">whisper.cpp</span>
+                        <span className="neo-gear-motor-sub">Próximamente</span>
+                      </button>
+                    </div>
+                    <p className="neo-gear-detail-hint">
+                      {transcriptionBackend === "moonshine-native"
+                        ? "Motor nativo Moonshine — inferencia ONNX a velocidad nativa (~134 MB de modelo)"
+                        : "Motor IA local — modelo ONNX ejecutado en el navegador"}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="neo-gear-section">
@@ -683,7 +789,7 @@ export function SetupScreen({ state, actions, nativeWavPath, animateIn }: SetupS
           </div>
         </div>
 
-        {(isBusy || transcription.finalText || diarization.status !== "idle") && (
+        {hasTranscriptionContent && (
           <div className="neo-transcription-panel" role="log" aria-live="polite" aria-label="Transcripción">
             <div className="neo-transcription-header">
               <div className="neo-transcription-tabs" role="tablist">

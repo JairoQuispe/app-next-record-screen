@@ -59,3 +59,60 @@ export async function listenToAudioLevels(
     callback(event.payload.level);
   });
 }
+
+// ── Native Transcription (Moonshine ONNX via Rust/ort) ──
+
+export interface TranscriptionModelInfo {
+  loaded: boolean;
+  cached: boolean;
+}
+
+export interface ModelDownloadProgress {
+  file_index: number;
+  total_files: number;
+  bytes_downloaded: number;
+  total_bytes: number;
+}
+
+export async function nativeTranscriptionLoadModel(): Promise<TranscriptionModelInfo> {
+  if (!isTauriRuntime()) {
+    throw new Error("Native transcription is only available in Tauri runtime.");
+  }
+  return invoke<TranscriptionModelInfo>("transcription_load_model");
+}
+
+export async function nativeTranscriptionTranscribe(
+  audio: number[],
+  language: string,
+): Promise<string> {
+  if (!isTauriRuntime()) {
+    throw new Error("Native transcription is only available in Tauri runtime.");
+  }
+  return invoke<string>("transcription_transcribe", { audio, language });
+}
+
+export async function nativeTranscriptionUnload(): Promise<void> {
+  if (!isTauriRuntime()) {
+    throw new Error("Native transcription is only available in Tauri runtime.");
+  }
+  return invoke<void>("transcription_unload_model");
+}
+
+export async function nativeTranscriptionModelStatus(): Promise<TranscriptionModelInfo> {
+  if (!isTauriRuntime()) {
+    return { loaded: false, cached: false };
+  }
+  try {
+    return await invoke<TranscriptionModelInfo>("transcription_model_status");
+  } catch {
+    return { loaded: false, cached: false };
+  }
+}
+
+export async function listenToModelDownloadProgress(
+  callback: (progress: ModelDownloadProgress) => void,
+): Promise<UnlistenFn> {
+  return listen<ModelDownloadProgress>("model-download-progress", (event) => {
+    callback(event.payload);
+  });
+}

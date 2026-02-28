@@ -79,6 +79,68 @@
   gap: 4px;
 }
 
+.neo-config-device-label {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.neo-config-device-select {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  padding: 0.62rem 2.2rem 0.62rem 0.8rem;
+  border: 2px solid rgba(57, 255, 20, 0.65);
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgba(33, 31, 41, 0.98) 0%, rgba(22, 20, 31, 0.98) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5l5 5 5-5' stroke='%2339ff14' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 0.6rem center / 14px 14px;
+  color: #f4fff0;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  outline: none;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
+  transition: border-color 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+}
+
+.neo-config-device-select:hover {
+  border-color: var(--neon-green);
+  background-color: rgba(36, 34, 46, 0.98);
+}
+
+.neo-config-device-select:focus-visible {
+  border-color: var(--neon-green);
+  box-shadow: 0 0 0 2px rgba(57, 255, 20, 0.24), 3px 3px 0 rgba(0, 0, 0, 0.5);
+}
+
+.neo-config-device-select optgroup,
+.neo-config-device-select option {
+  color: #f2f6f1;
+  background: #1f1c2a;
+}
+
+.neo-config-device-select optgroup {
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #b9fcb0;
+}
+
+.neo-config-device-select option {
+  font-weight: 700;
+}
+
+
+.neo-config-device-select option:checked {
+
+  color: var(--electric-yellow);
+}
+
 .neo-config-mic-option {
   display: flex;
   align-items: center;
@@ -140,6 +202,11 @@
 /* ── Gear Panel (audio enhancement settings) ── */
 .neo-gear-popup {
   gap: 0.5rem;
+  max-height: min(60dvh, 460px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .neo-gear-section {
@@ -163,7 +230,7 @@
 
 .neo-gear-label {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -172,12 +239,180 @@
 
 .neo-gear-desc {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.06rem;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-weight: 500;
   line-height: 1.4;
   color: rgba(255, 255, 255, 0.35);
   letter-spacing: 0;
+}
+
+/* ── Expand / "Leer más" Button ── */
+.neo-gear-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--electric-purple);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.neo-gear-expand-btn:hover {
+  color: var(--electric-yellow);
+}
+
+.neo-gear-expand-arrow {
+  display: inline-block;
+  font-size: 0.65rem;
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.neo-gear-expand-btn.is-open .neo-gear-expand-arrow {
+  transform: rotate(90deg);
+}
+
+/* ── Expandable Details Panel ── */
+.neo-gear-details {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+              opacity 0.25s ease;
+}
+
+.neo-gear-details.is-open {
+  max-height: 500px;
+  opacity: 1;
+}
+
+.neo-gear-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.5rem 0;
+}
+
+.neo-gear-detail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.neo-gear-detail-item strong {
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 700;
+}
+
+.neo-gear-detail-icon {
+  color: var(--electric-purple);
+  font-size: 0.6rem;
+  flex-shrink: 0;
+  margin-top: 0.12rem;
+}
+
+.neo-gear-detail-note {
+  margin: 0.4rem 0 0;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid rgba(163, 125, 255, 0.2);
+  background: rgba(163, 125, 255, 0.06);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.neo-gear-detail-hint {
+  margin: 0.25rem 0 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.3);
+  font-style: italic;
+}
+
+/* ── Motor Selector ── */
+.neo-gear-motor-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  margin-top: 0.4rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.neo-gear-motor-options {
+  display: flex;
+  gap: 0;
+}
+
+.neo-gear-motor-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.5rem 0.4rem;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.neo-gear-motor-btn:first-child {
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.neo-gear-motor-btn:last-child {
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.neo-gear-motor-btn:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.neo-gear-motor-btn.is-active {
+  border-color: var(--neon-green);
+  color: var(--neon-green);
+  background: rgba(57, 255, 20, 0.08);
+}
+
+.neo-gear-motor-btn.is-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.neo-gear-motor-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.neo-gear-motor-label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.neo-gear-motor-sub {
+  font-size: 0.55rem;
+  font-weight: 600;
+  opacity: 0.6;
 }
 
 /* ── Toggle Switch ── */
@@ -234,7 +469,7 @@
 
 .neo-gear-slider-label {
   font-family: inherit;
-  font-size: 0.58rem;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -250,19 +485,21 @@
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 6px;
+  height: 10px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 0;
   outline: none;
   cursor: pointer;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .neo-gear-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   background: var(--neon-green);
   border: 2px solid var(--neo-black);
   border-radius: 0;
@@ -276,8 +513,8 @@
 }
 
 .neo-gear-slider::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   background: var(--neon-green);
   border: 2px solid var(--neo-black);
   border-radius: 0;
@@ -288,7 +525,7 @@
 .neo-gear-slider-marks {
   display: flex;
   justify-content: space-between;
-  font-size: 0.5rem;
+  font-size: 0.62rem;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.25);
   letter-spacing: 0.04em;

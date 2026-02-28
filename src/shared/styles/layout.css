@@ -2,18 +2,19 @@
 .neo-app-container {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   padding-top: var(--neo-titlebar-height, 0px);
   background-color: rgb(30, 27, 36);
   box-sizing: border-box;
 }
 
 :root[data-tauri="true"] .neo-app-container {
-  min-height: calc(100vh - var(--neo-titlebar-height, 0px));
+  min-height: calc(100dvh - var(--neo-titlebar-height, 0px));
   padding-top: var(--neo-titlebar-height, 0px);
   overflow-y: auto;
   overflow-x: hidden;
 }
 
 :root[data-tauri="true"] .neo-app-shell {
-  min-height: calc(100vh - var(--neo-titlebar-height, 0px));
+  min-height: calc(100dvh - var(--neo-titlebar-height, 0px));
 }
