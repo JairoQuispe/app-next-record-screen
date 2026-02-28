@@ -3,13 +3,28 @@ import "./AnonButton.css";
 
 interface AnonButtonProps {
   onClick: () => void;
+  variant?: "full" | "mask";
+  position?: "top-center" | "top-right";
 }
 
-export const AnonButton = memo(function AnonButton({ onClick }: AnonButtonProps) {
+export const AnonButton = memo(function AnonButton({
+  onClick,
+  variant = "full",
+  position = "top-center",
+}: AnonButtonProps) {
+  const buttonClassName = [
+    "neo-anon-btn",
+    variant === "mask" ? "neo-anon-btn--mask" : "",
+    position === "top-right" ? "neo-anon-btn--top-right" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <button
-      className="neo-anon-btn"
+      className={buttonClassName}
       onClick={onClick}
+      type="button"
     >
       <span className="neo-anon-btn-icon" aria-hidden="true">
         <svg
@@ -41,10 +56,12 @@ export const AnonButton = memo(function AnonButton({ onClick }: AnonButtonProps)
                   " fill="currentColor" />
         </svg>
       </span>
-      <span className="neo-anon-btn-text" aria-live="polite">
-        <span className="text-anon">Anon</span>
-        <span className="text-user">Ingresar</span>
-      </span>
+      {variant === "full" && (
+        <span className="neo-anon-btn-text" aria-live="polite">
+          <span className="text-anon">Anon</span>
+          <span className="text-user">Ingresar</span>
+        </span>
+      )}
     </button>
   );
 });

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { SelectionPage } from "@features/selection/ui/SelectionPage";
+import { AnonButton } from "@features/selection/ui/AnonButton";
 import { TitleBar } from "@shared/ui/titlebar/TitleBar";
 import { isTauriRuntime } from "@shared/lib/runtime/isTauriRuntime";
 import "./App.css";
@@ -110,6 +111,11 @@ function App() {
               <span className="neo-back-label">VOLVER</span>
             </button>
           )}
+          <AnonButton
+            onClick={() => console.log("Anon button clicked")}
+            variant="mask"
+            position="top-right"
+          />
           {mode === "audio" ? (
             <Suspense fallback={null}>
               <AudioRecorderPage />

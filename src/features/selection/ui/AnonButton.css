@@ -18,6 +18,15 @@
   gap: 8px;
 }
 
+.neo-anon-btn--top-right {
+  position: fixed;
+  top: calc(var(--neo-titlebar-height, 0px) + 12px);
+  left: auto;
+  right: 12px;
+  transform: none;
+  z-index: 1101;
+}
+
 .neo-anon-btn:hover {
   border-color: #ffffff;
   color: #ffffff;
@@ -26,6 +35,10 @@
 
 .neo-anon-btn:active {
   transform: translateX(-50%) scale(0.95);
+}
+
+.neo-anon-btn--top-right:active {
+  transform: scale(0.95);
 }
 
 .neo-anon-btn-icon {
@@ -97,4 +110,34 @@
 .neo-anon-btn:hover .text-user {
   opacity: 1;
   transform: translateY(-50%);
+}
+
+.neo-anon-btn--mask {
+  padding: 8px;
+  gap: 0;
+}
+
+.neo-anon-btn--mask .neo-anon-btn-icon {
+  width: 22px;
+  height: 26px;
+}
+
+.neo-anon-btn--mask .icon-anon {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.neo-anon-btn--mask .icon-user {
+  opacity: 0;
+  transform: translateY(4px) scale(0.95);
+}
+
+.neo-anon-btn--mask:hover .icon-anon {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.95);
+}
+
+.neo-anon-btn--mask:hover .icon-user {
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
