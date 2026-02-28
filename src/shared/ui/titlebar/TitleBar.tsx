@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { isTauriRuntime } from "@shared/lib/runtime/isTauriRuntime";
 import "./TitleBar.css";
+
+const IS_TAURI = isTauriRuntime();
 
 type WindowControls = {
   minimize(): Promise<void>;
@@ -35,11 +37,11 @@ interface TitleBarProps {
   leftAction?: ReactNode;
 }
 
-export function TitleBar({ title, backgroundColor, leftAction }: TitleBarProps) {
+export const TitleBar = memo(function TitleBar({ title, backgroundColor, leftAction }: TitleBarProps) {
   const [appWindow, setAppWindow] = useState<WindowControls | null>(null);
 
   useEffect(() => {
-    if (!isTauriRuntime()) return;
+    if (!IS_TAURI) return;
 
     let mounted = true;
 
@@ -81,7 +83,7 @@ export function TitleBar({ title, backgroundColor, leftAction }: TitleBarProps) 
     await appWindow?.close();
   }, [appWindow]);
 
-  if (!isTauriRuntime()) return null;
+  if (!IS_TAURI) return null;
 
   return (
     <div className="neo-titlebar" style={style}>
@@ -133,4 +135,4 @@ export function TitleBar({ title, backgroundColor, leftAction }: TitleBarProps) 
       </div>
     </div>
   );
-}
+});

@@ -60,6 +60,7 @@ export interface AudioRecorderState {
   denoiseEnabled: boolean;
   denoiseIntensity: number;
   normalizeEnabled: boolean;
+  transcriptionEnabled: boolean;
 }
 
 export interface AudioRecorderActions {
@@ -75,4 +76,5 @@ export interface AudioRecorderActions {
   setDenoiseEnabled: (enabled: boolean) => void;
   setDenoiseIntensity: (intensity: number) => void;
   setNormalizeEnabled: (enabled: boolean) => void;
+  setTranscriptionEnabled: (enabled: boolean) => void;
 }

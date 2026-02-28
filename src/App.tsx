@@ -1,8 +1,10 @@
 import { lazy, Suspense, useCallback, useState } from "react";
-import { SelectionPage } from "@features/selection";
+import { SelectionPage } from "@features/selection/ui/SelectionPage";
 import { TitleBar } from "@shared/ui/titlebar/TitleBar";
-import { isTauriRuntime } from "@shared/lib/runtime";
+import { isTauriRuntime } from "@shared/lib/runtime/isTauriRuntime";
 import "./App.css";
+
+const IS_TAURI = isTauriRuntime();
 
 const AudioRecorderPage = lazy(() =>
   import("@features/audio-recorder/ui/AudioRecorderPage").then((m) => ({ default: m.AudioRecorderPage }))
@@ -46,7 +48,7 @@ function App() {
   }, [setViewTransition]);
 
   const handleSelectAudio = useCallback(() => {
-    if (isTauriRuntime()) {
+    if (IS_TAURI) {
       setTitleBarState({
         title: "GRABAR AUDIO",
         backgroundColor: "#19c4ae",
@@ -57,7 +59,7 @@ function App() {
   }, [navigateTo, setViewTransition]);
 
   const handleSelectScreen = useCallback(() => {
-    if (isTauriRuntime()) {
+    if (IS_TAURI) {
       setTitleBarState({
         title: "GRABAR AUDIO + PANTALLA",
         backgroundColor: "var(--electric-purple)",
@@ -76,9 +78,7 @@ function App() {
     </button>
   );
 
-  const isTauri = isTauriRuntime();
-
-  if (mode === "audio") {
+  if (mode === "audio" || mode === "screen") {
     return (
       <>
         <TitleBar
@@ -87,7 +87,7 @@ function App() {
           leftAction={backButton}
         />
         <div className="neo-app-container">
-          {!isTauri && (
+          {!IS_TAURI && (
             <button className="neo-back-button" onClick={handleBackToSelection}>
               <svg className="neo-back-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" width="18" height="18" aria-hidden="true">
                 <path d="M19 12H5" />
@@ -96,37 +96,17 @@ function App() {
               <span className="neo-back-label">VOLVER</span>
             </button>
           )}
-          <Suspense fallback={null}>
-            <AudioRecorderPage />
-          </Suspense>
-        </div>
-      </>
-    );
-  }
-
-  if (mode === "screen") {
-    return (
-      <>
-        <TitleBar
-          title={titleBarState.title}
-          backgroundColor={titleBarState.backgroundColor}
-          leftAction={backButton}
-        />
-        <div className="neo-app-container">
-          {!isTauri && (
-            <button className="neo-back-button" onClick={handleBackToSelection}>
-              <svg className="neo-back-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" width="18" height="18" aria-hidden="true">
-                <path d="M19 12H5" />
-                <path d="M12 19l-7-7 7-7" />
-              </svg>
-              <span className="neo-back-label">VOLVER</span>
-            </button>
+          {mode === "audio" ? (
+            <Suspense fallback={null}>
+              <AudioRecorderPage />
+            </Suspense>
+          ) : (
+            <div className="neo-temp-placeholder">
+              <div className="neo-badge">PRÓXIMAMENTE</div>
+              <h2>GRABACIÓN DE PANTALLA</h2>
+              <p>Esta función estará disponible en la próxima actualización.</p>
+            </div>
           )}
-          <div className="neo-temp-placeholder">
-            <div className="neo-badge">PRÓXIMAMENTE</div>
-            <h2>GRABACIÓN DE PANTALLA</h2>
-            <p>Esta función estará disponible en la próxima actualización.</p>
-          </div>
         </div>
       </>
     );

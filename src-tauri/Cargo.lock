@@ -3885,7 +3885,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "recogni"
+name = "recognimg"
 version = "0.1.0"
 dependencies = [
  "dirs",

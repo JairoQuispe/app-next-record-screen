@@ -1,8 +1,11 @@
 import { memo, useMemo } from "react";
-import { SettingsIcon, MixerIcon } from "@shared/ui/icons";
-import { formatDuration } from "@shared/lib/utils";
+import { SettingsIcon } from "@shared/ui/icons/SettingsIcon";
+import { MixerIcon } from "@shared/ui/icons/MixerIcon";
+import { formatDuration } from "@shared/lib/utils/formatDuration";
 import { isTauriRuntime } from "@shared/lib/runtime/isTauriRuntime";
 import type { AudioRecorderState, AudioRecorderActions } from "../model/types";
+
+const IS_TAURI = isTauriRuntime();
 
 const recordingFooter = (
   <footer className="neo-footer neo-footer--inside">
@@ -109,8 +112,6 @@ export function RecordingScreen({ state, actions, animateIn, onBackToSetup }: Re
 
   const { startRecording, stopRecording, pauseRecording, resumeRecording, saveRecording } = actions;
 
-  const isTauri = isTauriRuntime();
-
   const usesMicrophone = audioInputSource === "microphone" || audioInputSource === "mixed";
   const canStart = status !== "recording" && status !== "paused";
   const canPause = status === "recording";
@@ -216,7 +217,7 @@ export function RecordingScreen({ state, actions, animateIn, onBackToSetup }: Re
             <div className="neo-playback-card neo-animate-slide-up">
               <p className="neo-playback-title">GRABACIÓN LISTA</p>
               <audio controls src={audioUrl} className="neo-audio-player" />
-              {isTauri ? (
+              {IS_TAURI ? (
                 <button
                   type="button"
                   className="neo-download-link"

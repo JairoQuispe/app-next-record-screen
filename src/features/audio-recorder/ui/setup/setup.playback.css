@@ -54,3 +54,81 @@
 .neo-setup-save-btn:active {
   transform: translateY(1px);
 }
+
+/* ── Cloud Transcription Button ── */
+.neo-setup-transcribe-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border: 3px solid var(--neo-black);
+  border-radius: 4px;
+  background: var(--electric-yellow);
+  color: var(--neo-black);
+  font-family: inherit;
+  font-weight: 900;
+  font-size: 0.9rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.18s ease, transform 0.12s ease;
+}
+
+.neo-setup-transcribe-btn:hover {
+  background: #ffe04a;
+  transform: translateY(-1px);
+}
+
+.neo-setup-transcribe-btn:active {
+  transform: translateY(1px);
+}
+
+.neo-setup-transcribe-btn--cancel {
+  background: var(--hot-pink);
+  color: var(--neo-fg);
+}
+
+.neo-setup-transcribe-btn--cancel:hover {
+  background: #ff66b5;
+}
+
+.neo-setup-transcribe-btn--done {
+  background: var(--neon-green);
+}
+
+.neo-setup-transcribe-btn--done:hover {
+  background: #5fff42;
+}
+
+/* ── Transcription Progress ── */
+.neo-transcribe-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.neo-transcribe-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--dark-slate);
+  border: 2px solid var(--neo-black);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.neo-transcribe-progress-fill {
+  height: 100%;
+  background: var(--electric-yellow);
+  transition: width 0.3s ease;
+}
+
+.neo-transcribe-progress-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--electric-yellow);
+  text-align: center;
+}

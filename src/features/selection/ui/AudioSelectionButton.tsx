@@ -1,126 +1,49 @@
-import { useEffect, useRef } from "react";
+import { memo, useRef } from "react";
+import { useCanvasAnimation } from "./useCanvasAnimation";
 
 interface AudioSelectionButtonProps {
   onSelectAudio: () => void;
 }
 
-export function AudioSelectionButton({ onSelectAudio }: AudioSelectionButtonProps) {
+type WaveBar = { height: number; targetHeight: number; speed: number };
+
+const BAR_COUNT = 40;
+let bars: WaveBar[] = [];
+
+const initBars = (h: number) => {
+  const maxH = Math.max(14, h * 0.72);
+  bars = Array.from({ length: BAR_COUNT }, () => ({
+    height: Math.random() * maxH * 0.45 + 6,
+    targetHeight: Math.random() * maxH + 6,
+    speed: 0.08 + Math.random() * 0.22,
+  }));
+};
+
+export const AudioSelectionButton = memo(function AudioSelectionButton({ onSelectAudio }: AudioSelectionButtonProps) {
   const audioButtonRef = useRef<HTMLButtonElement | null>(null);
   const waveformCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  useEffect(() => {
-    const button = audioButtonRef.current;
-    const canvas = waveformCanvasRef.current;
-
-    if (!button || !canvas) {
-      return;
-    }
-
-    const context = canvas.getContext("2d");
-    if (!context) {
-      return;
-    }
-
-    type WaveBar = {
-      height: number;
-      targetHeight: number;
-      speed: number;
-    };
-
-    const barCount = 40;
-    let bars: WaveBar[] = [];
-    let animationFrameId: number | null = null;
-
-    const resizeCanvas = () => {
-      const ratio = window.devicePixelRatio || 1;
-      const { width, height } = button.getBoundingClientRect();
-
-      canvas.width = Math.max(1, Math.floor(width * ratio));
-      canvas.height = Math.max(1, Math.floor(height * ratio));
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-
-      context.setTransform(ratio, 0, 0, ratio, 0, 0);
-    };
-
-    const initBars = () => {
-      const maxHeight = Math.max(14, canvas.clientHeight * 0.72);
-      bars = Array.from({ length: barCount }, () => ({
-        height: Math.random() * maxHeight * 0.45 + 6,
-        targetHeight: Math.random() * maxHeight + 6,
-        speed: 0.08 + Math.random() * 0.22,
-      }));
-    };
-
-    const stopAnimation = () => {
-      if (animationFrameId !== null) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-      }
-      context.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
-    };
-
-    const drawWaveform = () => {
-      const canvasWidth = canvas.clientWidth;
-      const canvasHeight = canvas.clientHeight;
-      const centerY = canvasHeight / 2;
-      const slotWidth = canvasWidth / barCount;
-      const barWidth = Math.max(2, slotWidth - 2);
-
-      context.clearRect(0, 0, canvasWidth, canvasHeight);
-      context.fillStyle = "rgba(0, 0, 0, 0.28)";
-
-      bars.forEach((bar, index) => {
-        if (Math.abs(bar.height - bar.targetHeight) < 1) {
-          bar.targetHeight = Math.random() * (canvasHeight * 0.76) + 4;
-        }
-
+  useCanvasAnimation(audioButtonRef, waveformCanvasRef, {
+    onEnter: (_ctx, _w, h) => initBars(h),
+    onDraw: (ctx, w, h) => {
+      const centerY = h / 2;
+      const slotW = w / BAR_COUNT;
+      const barW = Math.max(2, slotW - 2);
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
+      for (let i = 0; i < BAR_COUNT; i++) {
+        const bar = bars[i];
+        if (!bar) continue;
+        if (Math.abs(bar.height - bar.targetHeight) < 1) bar.targetHeight = Math.random() * (h * 0.76) + 4;
         bar.height += (bar.targetHeight - bar.height) * bar.speed;
-
-        const x = index * slotWidth + (slotWidth - barWidth) / 2;
-        const y = centerY - bar.height / 2;
-
-        context.beginPath();
-        context.roundRect(x, y, barWidth, bar.height, 2);
-        context.fill();
-      });
-
-      animationFrameId = requestAnimationFrame(drawWaveform);
-    };
-
-    const handleEnter = () => {
-      resizeCanvas();
-      initBars();
-      if (animationFrameId === null) {
-        drawWaveform();
+        const x = i * slotW + (slotW - barW) / 2;
+        ctx.beginPath();
+        ctx.roundRect(x, centerY - bar.height / 2, barW, bar.height, 2);
+        ctx.fill();
       }
-    };
-
-    const handleLeave = () => {
-      stopAnimation();
-    };
-
-    const resizeObserver = new ResizeObserver(() => {
-      resizeCanvas();
-      if (animationFrameId !== null) {
-        initBars();
-      }
-    });
-
-    resizeObserver.observe(button);
-    button.addEventListener("mouseenter", handleEnter);
-    button.addEventListener("mouseleave", handleLeave);
-    button.addEventListener("blur", handleLeave);
-    resizeCanvas();
-
-    return () => {
-      resizeObserver.disconnect();
-      button.removeEventListener("mouseenter", handleEnter);
-      button.removeEventListener("mouseleave", handleLeave);
-      button.removeEventListener("blur", handleLeave);
-      stopAnimation();
-    };
-  }, []);
+    },
+    onResize: (_w, h, isAnimating) => { if (isAnimating) initBars(h); },
+  });
 
   return (
     <button ref={audioButtonRef} className="neo-minimal-btn neo-btn-green" onClick={onSelectAudio}>
@@ -142,4 +65,4 @@ export function AudioSelectionButton({ onSelectAudio }: AudioSelectionButtonProp
       <span className="neo-btn-text">GRABAR AUDIO</span>
     </button>
   );
-}
+});

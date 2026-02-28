@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const PREVIEW_BAR_COUNT = 48;
 const PREVIEW_INTERVAL_MS = 80;
 
-const ZERO_LEVELS: number[] = Array.from({ length: PREVIEW_BAR_COUNT }, () => 0);
+const ZERO_LEVELS: number[] = new Array(PREVIEW_BAR_COUNT).fill(0);
 
 /**
  * Opens a temporary microphone stream and returns real-time frequency levels
@@ -132,11 +132,6 @@ export function useMicrophonePreview(
       cleanup();
     };
   }, [enabled, deviceId, cleanup]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return cleanup;
-  }, [cleanup]);
 
   return { levels, isActive };
 }

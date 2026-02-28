@@ -2,52 +2,36 @@ import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { isTauriRuntime } from "./isTauriRuntime";
 
+function assertTauri(feature: string): void {
+  if (!isTauriRuntime()) throw new Error(`${feature} is only available in Tauri runtime.`);
+}
+
 export interface AudioLevelEvent {
   level: number;
 }
 
 export async function startNativeSystemAudioCapture(): Promise<string> {
-  if (!isTauriRuntime()) {
-    throw new Error("Native system audio capture is only available in Tauri runtime.");
-  }
+  assertTauri("Native system audio capture");
   return invoke<string>("start_system_audio_capture");
 }
 
 export async function stopNativeSystemAudioCapture(): Promise<string> {
-  if (!isTauriRuntime()) {
-    throw new Error("Native system audio capture is only available in Tauri runtime.");
-  }
+  assertTauri("Native system audio capture");
   return invoke<string>("stop_system_audio_capture");
 }
 
 export async function isNativeSystemAudioAvailable(): Promise<boolean> {
-  if (!isTauriRuntime()) {
-    return false;
-  }
-  try {
-    return await invoke<boolean>("is_system_audio_available");
-  } catch {
-    return false;
-  }
+  if (!isTauriRuntime()) return false;
+  try { return await invoke<boolean>("is_system_audio_available"); } catch { return false; }
 }
 
 export function convertFilePathToUrl(filePath: string): string {
   return convertFileSrc(filePath);
 }
 
-export async function enhanceAudio(
-  inputPath: string,
-  intensity: number,
-  normalize: boolean,
-): Promise<string> {
-  if (!isTauriRuntime()) {
-    throw new Error("Audio enhancement is only available in Tauri runtime.");
-  }
-  return invoke<string>("enhance_audio", {
-    inputPath,
-    intensity: Math.max(0, Math.min(1, intensity)),
-    normalize,
-  });
+export async function enhanceAudio(inputPath: string, intensity: number, normalize: boolean): Promise<string> {
+  assertTauri("Audio enhancement");
+  return invoke<string>("enhance_audio", { inputPath, intensity: Math.max(0, Math.min(1, intensity)), normalize });
 }
 
 /// Subscribe to real-time audio level events from the Rust capture thread.
@@ -75,38 +59,23 @@ export interface ModelDownloadProgress {
 }
 
 export async function nativeTranscriptionLoadModel(): Promise<TranscriptionModelInfo> {
-  if (!isTauriRuntime()) {
-    throw new Error("Native transcription is only available in Tauri runtime.");
-  }
+  assertTauri("Native transcription");
   return invoke<TranscriptionModelInfo>("transcription_load_model");
 }
 
-export async function nativeTranscriptionTranscribe(
-  audio: number[],
-  language: string,
-): Promise<string> {
-  if (!isTauriRuntime()) {
-    throw new Error("Native transcription is only available in Tauri runtime.");
-  }
+export async function nativeTranscriptionTranscribe(audio: number[], language: string): Promise<string> {
+  assertTauri("Native transcription");
   return invoke<string>("transcription_transcribe", { audio, language });
 }
 
 export async function nativeTranscriptionUnload(): Promise<void> {
-  if (!isTauriRuntime()) {
-    throw new Error("Native transcription is only available in Tauri runtime.");
-  }
+  assertTauri("Native transcription");
   return invoke<void>("transcription_unload_model");
 }
 
 export async function nativeTranscriptionModelStatus(): Promise<TranscriptionModelInfo> {
-  if (!isTauriRuntime()) {
-    return { loaded: false, cached: false };
-  }
-  try {
-    return await invoke<TranscriptionModelInfo>("transcription_model_status");
-  } catch {
-    return { loaded: false, cached: false };
-  }
+  if (!isTauriRuntime()) return { loaded: false, cached: false };
+  try { return await invoke<TranscriptionModelInfo>("transcription_model_status"); } catch { return { loaded: false, cached: false }; }
 }
 
 export async function listenToModelDownloadProgress(

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { AudioSelectionButton } from "./AudioSelectionButton";
 import { ScreenSelectionButton } from "./ScreenSelectionButton";
 import "./SelectionPage.css";
@@ -7,7 +8,7 @@ interface SelectionPageProps {
   onSelectScreen: () => void;
 }
 
-export function SelectionPage({ onSelectAudio, onSelectScreen }: SelectionPageProps) {
+export const SelectionPage = memo(function SelectionPage({ onSelectAudio, onSelectScreen }: SelectionPageProps) {
   return (
     <div className="neo-selection-wrapper">
       <main className="neo-selection-container">
@@ -18,4 +19,4 @@ export function SelectionPage({ onSelectAudio, onSelectScreen }: SelectionPagePr
       </main>
     </div>
   );
-}
+});

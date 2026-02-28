@@ -5,11 +5,13 @@ import type {
   TranscriptionActions,
   InferenceDevice,
 } from "../lib/transcription/types";
+import { isTauriRuntime } from "@shared/lib/runtime/isTauriRuntime";
 import {
-  isTauriRuntime,
   nativeTranscriptionLoadModel,
   nativeTranscriptionTranscribe,
-} from "@shared/lib/runtime";
+} from "@shared/lib/runtime/tauriAudioCapture";
+
+const IS_TAURI = isTauriRuntime();
 
 const CHUNK_DURATION_S = 3;
 const SAMPLE_RATE = 16000;
@@ -125,7 +127,7 @@ export function useTranscription(
   backendRef.current = backend;
 
   const isNativeBackend = useCallback(() => {
-    return backendRef.current === "moonshine-native" && isTauriRuntime();
+    return backendRef.current === "moonshine-native" && IS_TAURI;
   }, []);
 
   const getWorker = useCallback(() => {

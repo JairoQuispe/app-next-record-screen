@@ -17,6 +17,8 @@ import {
 } from "@shared/lib/runtime/tauriAudioCapture";
 import { SPECTRUM_BAR_COUNT, SPECTRUM_ZERO_LEVELS, CANDIDATE_MIME_TYPES } from "../lib/constants";
 
+const IS_TAURI = isTauriRuntime();
+
 const IS_BROWSER =
   typeof window !== "undefined" &&
   typeof navigator !== "undefined" &&
@@ -91,6 +93,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
   const [denoiseEnabled, setDenoiseEnabled] = useState(false);
   const [denoiseIntensity, setDenoiseIntensityState] = useState(65);
   const [normalizeEnabled, setNormalizeEnabled] = useState(false);
+  const [transcriptionEnabled, setTranscriptionEnabled] = useState(false);
 
   const streamRef = useRef<MediaStream | null>(null);
   const displayStreamRef = useRef<MediaStream | null>(null);
@@ -101,9 +104,6 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
   const recordedMimeTypeRef = useRef<string | null>(null);
   const nativeWavPathRef = useRef<string | null>(null);
   const timerRef = useRef<number | null>(null);
-  const timerStartRef = useRef<number>(0);
-  const timerPausedAtRef = useRef<number>(0);
-  const timerPausedMsRef = useRef<number>(0);
   const permissionStatusRef = useRef<PermissionStatus | null>(null);
   const spectrumAudioContextRef = useRef<AudioContext | null>(null);
   const mixAudioContextRef = useRef<AudioContext | null>(null);
@@ -119,12 +119,12 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
   const isSupported = IS_MEDIA_SUPPORTED;
 
   const [isSystemAudioSupported, setIsSystemAudioSupported] = useState(() => {
-    if (isTauriRuntime()) return true;
+    if (IS_TAURI) return true;
     return IS_BROWSER && !!navigator.mediaDevices?.getDisplayMedia;
   });
 
   useEffect(() => {
-    if (isTauriRuntime()) {
+    if (IS_TAURI) {
       isNativeSystemAudioAvailable().then((available) => {
         setIsSystemAudioSupported(available);
       });
@@ -140,30 +140,10 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
 
   const startTimer = useCallback(() => {
     stopTimer();
-    timerStartRef.current = Date.now();
-    timerPausedMsRef.current = 0;
-    timerPausedAtRef.current = 0;
     timerRef.current = window.setInterval(() => {
-      const elapsed = Date.now() - timerStartRef.current - timerPausedMsRef.current;
-      setDurationSeconds(Math.floor(elapsed / 1000));
-    }, 250);
+      setDurationSeconds((previous) => previous + 1);
+    }, 1000);
   }, [stopTimer]);
-
-  const pauseTimer = useCallback(() => {
-    timerPausedAtRef.current = Date.now();
-    stopTimer();
-  }, [stopTimer]);
-
-  const resumeTimer = useCallback(() => {
-    if (timerPausedAtRef.current > 0) {
-      timerPausedMsRef.current += Date.now() - timerPausedAtRef.current;
-      timerPausedAtRef.current = 0;
-    }
-    timerRef.current = window.setInterval(() => {
-      const elapsed = Date.now() - timerStartRef.current - timerPausedMsRef.current;
-      setDurationSeconds(Math.floor(elapsed / 1000));
-    }, 250);
-  }, []);
 
   const stopSpectrumMonitor = useCallback(() => {
     if (spectrumTimerRef.current !== null) {
@@ -476,26 +456,26 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     const recorder = mediaRecorderRef.current;
     if (recorder?.state === "recording") {
       recorder.pause();
-      pauseTimer();
+      stopTimer();
       setStatus("paused");
     }
-  }, [pauseTimer]);
+  }, [stopTimer]);
 
   const resumeRecording = useCallback(() => {
     const recorder = mediaRecorderRef.current;
     if (recorder?.state === "paused") {
       recorder.resume();
-      resumeTimer();
+      startTimer();
       setStatus("recording");
     }
-  }, [resumeTimer]);
+  }, [startTimer]);
 
   const saveRecording = useCallback(async () => {
     if (!audioUrl) {
       return;
     }
 
-    if (!isTauriRuntime()) {
+    if (!IS_TAURI) {
       return;
     }
 
@@ -609,8 +589,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
   }, [audioInputSource, getMicrophoneStream, getSystemAudioStream, mixAudioStreams]);
 
   const startRecording = useCallback(async () => {
-    console.log("[startRecording] CALLED. source=%s, isTauri=%s, isSupported=%s", audioInputSource, isTauriRuntime(), isSupported);
-    const isNativeSystemOnly = isTauriRuntime() && audioInputSource === "system";
+    const isNativeSystemOnly = IS_TAURI && audioInputSource === "system";
 
     if (!isSupported && !isNativeSystemOnly) {
       console.error("[startRecording] Not supported, aborting");
@@ -633,13 +612,11 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     }
 
     // Native system audio capture path (Tauri desktop)
-    const useNativeSystemCapture = isTauriRuntime() && audioInputSource === "system";
+    const useNativeSystemCapture = IS_TAURI && audioInputSource === "system";
 
     try {
       setErrorMessage(null);
       resetRecordingData();
-
-      console.log("[useAudioRecorder] startRecording: source=%s, useNative=%s, isTauri=%s", audioInputSource, useNativeSystemCapture, isTauriRuntime());
 
       if (useNativeSystemCapture && audioInputSource === "system") {
         // Pure system audio: use native Rust capture only
@@ -891,6 +868,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     denoiseEnabled,
     denoiseIntensity,
     normalizeEnabled,
+    transcriptionEnabled,
     startRecording,
     stopRecording,
     pauseRecording,
@@ -903,5 +881,6 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     setDenoiseEnabled,
     setDenoiseIntensity,
     setNormalizeEnabled,
+    setTranscriptionEnabled,
   };
 }

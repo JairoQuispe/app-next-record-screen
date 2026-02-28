@@ -5,6 +5,8 @@ import {
   convertFilePathToUrl,
 } from "@shared/lib/runtime/tauriAudioCapture";
 
+const IS_TAURI = isTauriRuntime();
+
 export interface NoiseSuppressionState {
   isProcessing: boolean;
   progress: number;
@@ -58,7 +60,7 @@ export function useNoiseSuppression(): NoiseSuppressionState & NoiseSuppressionA
       setProgress(10);
 
       try {
-        if (isTauriRuntime() && nativeWavPath) {
+        if (IS_TAURI && nativeWavPath) {
           // Desktop path: call Rust enhance_audio command
           setProgress(30);
           const enhancedPath = await enhanceAudio(
