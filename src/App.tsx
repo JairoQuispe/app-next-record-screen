@@ -132,6 +132,7 @@ function App() {
       <SelectionPage
         onSelectAudio={handleSelectAudio}
         onSelectScreen={handleSelectScreen}
+        onAnonClick={() => console.log("Anon button clicked")}
       />
     </>
   );

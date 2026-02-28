@@ -31,14 +31,15 @@ export function SetupScreen({ recorder, nativeWavPath, animateIn }: SetupScreenP
     <main className={`neo-app-shell neo-app-shell--setup neo-animate-enter ${animateIn ? 'is-visible' : ''}`}>
       <div className={`neo-setup-layout ${s.hasExtraContent ? "is-scrollable" : "is-locked"}`}>
 
-        <StatusHero
-          durationSeconds={s.durationSeconds}
-          isRecording={s.isRecording}
-          isPaused={s.isPaused}
-          statusLabel={s.statusLabel}
-        />
-
         <div className="neo-setup-rec-controls">
+          {(s.isRecording || s.isPaused) && (
+            <StatusHero
+              durationSeconds={s.durationSeconds}
+              isRecording={s.isRecording}
+              isPaused={s.isPaused}
+              statusLabel={s.statusLabel}
+            />
+          )}
           {s.showConfigPanel && (s.isIdle || s.isStopped) && (
             <Suspense fallback={null}>
               <AudioSourceConfig
@@ -94,7 +95,7 @@ export function SetupScreen({ recorder, nativeWavPath, animateIn }: SetupScreenP
           />
         </div>
 
-        {(s.isBusy || s.transcription.finalText || s.diarization.status !== "idle") && (
+        {(s.transcriptionEnabled && (s.isBusy || s.transcription.finalText || s.diarization.status !== "idle")) && (
           <Suspense fallback={null}>
             <TranscriptionPanel
               activeTab={s.activeTab}
