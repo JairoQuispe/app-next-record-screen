@@ -86,6 +86,22 @@ function mergeWithLastSegment(previous: string, incoming: string): string {
   return `${previous}\n${normalizedIncoming}`;
 }
 
+function toErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {
+    return String((error as { message: unknown }).message);
+  }
+  return String(error);
+}
+
+function toTranscriptionText(raw: unknown): string {
+  if (typeof raw === "string") return raw;
+  if (typeof raw === "object" && raw !== null && "message" in raw) {
+    return String((raw as Record<string, unknown>).message);
+  }
+  return String(raw);
+}
+
 /**
  * Unified real-time transcription hook with provider abstraction.
  *
@@ -130,6 +146,39 @@ export function useTranscription(
     return backendRef.current === "moonshine-native" && IS_TAURI;
   }, []);
 
+  const clearInferenceTimeout = useCallback(() => {
+    if (inferenceTimeoutRef.current !== null) {
+      window.clearTimeout(inferenceTimeoutRef.current);
+      inferenceTimeoutRef.current = null;
+    }
+  }, []);
+
+  const beginChunkProcessing = useCallback(() => {
+    setIsProcessing(true);
+    setInterimText("Transcribiendo...");
+    isChunkInFlightRef.current = true;
+  }, []);
+
+  const endChunkProcessing = useCallback((clearModelLoading = false) => {
+    setIsProcessing(false);
+    isChunkInFlightRef.current = false;
+    setInterimText("");
+    if (clearModelLoading) {
+      setIsModelLoading(false);
+    }
+    clearInferenceTimeout();
+  }, [clearInferenceTimeout]);
+
+  const appendFinalText = useCallback((text?: string) => {
+    if (!text || !text.trim() || isHallucination(text)) return;
+
+    setFinalText((prev) => {
+      const next = mergeWithLastSegment(prev, text);
+      lastContextRef.current = next.split("\n").slice(-3).join(" ");
+      return next;
+    });
+  }, []);
+
   const getWorker = useCallback(() => {
     if (workerRef.current) return workerRef.current;
 
@@ -147,14 +196,8 @@ export function useTranscription(
 
     worker.onerror = (evt) => {
       console.error("[useTranscription] Worker crashed:", evt.message);
-      setIsProcessing(false);
-      isChunkInFlightRef.current = false;
-      setInterimText("");
+      endChunkProcessing();
       setError(evt.message ?? "Worker crashed");
-      if (inferenceTimeoutRef.current !== null) {
-        window.clearTimeout(inferenceTimeoutRef.current);
-        inferenceTimeoutRef.current = null;
-      }
     };
 
     worker.onmessage = (event: MessageEvent) => {
@@ -175,30 +218,11 @@ export function useTranscription(
           console.log("[useTranscription] Model ready (web worker)");
           break;
         case "result":
-          setIsProcessing(false);
-          isChunkInFlightRef.current = false;
-          setInterimText("");
-          if (inferenceTimeoutRef.current !== null) {
-            window.clearTimeout(inferenceTimeoutRef.current);
-            inferenceTimeoutRef.current = null;
-          }
-          if (data.text && data.text.trim() && !isHallucination(data.text)) {
-            setFinalText((prev) => {
-              const next = mergeWithLastSegment(prev, data.text ?? "");
-              lastContextRef.current = next.split("\n").slice(-3).join(" ");
-              return next;
-            });
-          }
+          endChunkProcessing();
+          appendFinalText(data.text);
           break;
         case "error":
-          setIsProcessing(false);
-          isChunkInFlightRef.current = false;
-          setInterimText("");
-          setIsModelLoading(false);
-          if (inferenceTimeoutRef.current !== null) {
-            window.clearTimeout(inferenceTimeoutRef.current);
-            inferenceTimeoutRef.current = null;
-          }
+          endChunkProcessing(true);
           console.error("[useTranscription] Worker error:", data.error);
           setError(data.error ?? "Unknown error");
           break;
@@ -207,7 +231,7 @@ export function useTranscription(
 
     workerRef.current = worker;
     return worker;
-  }, []);
+  }, [appendFinalText, endChunkProcessing]);
 
   // ── Native model loading (Moonshine via Rust/ort) ──
   const loadNativeModel = useCallback(async () => {
@@ -226,9 +250,7 @@ export function useTranscription(
       console.log("[useTranscription] Native Moonshine model ready");
     } catch (e: unknown) {
       setIsModelLoading(false);
-      const msg = e instanceof Error ? e.message
-        : (typeof e === "object" && e !== null && "message" in e) ? String((e as { message: unknown }).message)
-        : String(e);
+      const msg = toErrorMessage(e);
       console.error("[useTranscription] Native model load error:", msg);
       setError(msg);
     }
@@ -236,40 +258,21 @@ export function useTranscription(
 
   // ── Native transcription via invoke() ──
   const sendChunkNative = useCallback(async (merged: Float32Array) => {
-    setIsProcessing(true);
-    setInterimText("Transcribiendo...");
-    isChunkInFlightRef.current = true;
+    beginChunkProcessing();
 
     try {
       const audioArray = Array.from(merged);
       const raw = await nativeTranscriptionTranscribe(audioArray, language);
-      const text = typeof raw === "string" ? raw
-        : (typeof raw === "object" && raw !== null && "message" in (raw as Record<string, unknown>))
-          ? String((raw as Record<string, unknown>).message)
-          : String(raw);
-
-      setIsProcessing(false);
-      isChunkInFlightRef.current = false;
-      setInterimText("");
-
-      if (text && text.trim() && !isHallucination(text)) {
-        setFinalText((prev) => {
-          const next = mergeWithLastSegment(prev, text);
-          lastContextRef.current = next.split("\n").slice(-3).join(" ");
-          return next;
-        });
-      }
+      const text = toTranscriptionText(raw);
+      endChunkProcessing();
+      appendFinalText(text);
     } catch (e: unknown) {
-      setIsProcessing(false);
-      isChunkInFlightRef.current = false;
-      setInterimText("");
-      const msg = e instanceof Error ? e.message
-        : (typeof e === "object" && e !== null && "message" in e) ? String((e as { message: unknown }).message)
-        : String(e);
+      endChunkProcessing();
+      const msg = toErrorMessage(e);
       console.error("[useTranscription] Native transcribe error:", msg);
       setError(msg);
     }
-  }, [language]);
+  }, [appendFinalText, beginChunkProcessing, endChunkProcessing, language]);
 
   const sendChunk = useCallback(() => {
     const chunks = audioBufferRef.current;
@@ -300,27 +303,21 @@ export function useTranscription(
     }
 
     // ── Web Worker path ──
-    setIsProcessing(true);
-    setInterimText("Transcribiendo...");
-    isChunkInFlightRef.current = true;
+    beginChunkProcessing();
 
     // Safety timeout: if worker never responds, unblock for next chunk
-    if (inferenceTimeoutRef.current !== null) {
-      window.clearTimeout(inferenceTimeoutRef.current);
-    }
+    clearInferenceTimeout();
     inferenceTimeoutRef.current = window.setTimeout(() => {
       if (isChunkInFlightRef.current) {
         console.warn("[useTranscription] Inference timeout — resetting stuck state");
-        isChunkInFlightRef.current = false;
-        setIsProcessing(false);
-        setInterimText("");
+        endChunkProcessing();
       }
       inferenceTimeoutRef.current = null;
     }, INFERENCE_TIMEOUT_MS);
 
     const worker = getWorker();
     worker.postMessage({ type: "transcribe", audio: merged, language, context: lastContextRef.current });
-  }, [getWorker, isNativeBackend, sendChunkNative, language]);
+  }, [beginChunkProcessing, clearInferenceTimeout, endChunkProcessing, getWorker, isNativeBackend, sendChunkNative, language]);
 
   const startCapture = useCallback(async (mediaStream: MediaStream) => {
     // Clean up any existing capture
@@ -378,10 +375,7 @@ export function useTranscription(
       window.clearInterval(chunkTimerRef.current);
       chunkTimerRef.current = null;
     }
-    if (inferenceTimeoutRef.current !== null) {
-      window.clearTimeout(inferenceTimeoutRef.current);
-      inferenceTimeoutRef.current = null;
-    }
+    clearInferenceTimeout();
 
     // Send any remaining audio
     sendChunk();
@@ -397,10 +391,23 @@ export function useTranscription(
     }
 
     audioBufferRef.current = [];
+    setIsProcessing(false);
     isChunkInFlightRef.current = false;
     lastContextRef.current = "";
     setInterimText("");
-  }, [sendChunk]);
+  }, [clearInferenceTimeout, sendChunk]);
+
+  const terminateWorker = useCallback((resetModelReady: boolean) => {
+    if (workerRef.current) {
+      workerRef.current.terminate();
+      workerRef.current = null;
+    }
+
+    if (resetModelReady) {
+      modelReadyRef.current = false;
+      setIsModelReady(false);
+    }
+  }, []);
 
   const clear = useCallback(() => {
     setFinalText("");
@@ -438,23 +445,16 @@ export function useTranscription(
   // If backend changes while active, terminate old worker so next getWorker() creates new one
   useEffect(() => {
     return () => {
-      if (workerRef.current) {
-        workerRef.current.terminate();
-        workerRef.current = null;
-        modelReadyRef.current = false;
-      }
+      terminateWorker(true);
     };
-  }, [backend]);
+  }, [backend, terminateWorker]);
 
   // Cleanup worker on unmount
   useEffect(() => {
     return () => {
-      if (workerRef.current) {
-        workerRef.current.terminate();
-        workerRef.current = null;
-      }
+      terminateWorker(false);
     };
-  }, []);
+  }, [terminateWorker]);
 
   return {
     isModelLoading,

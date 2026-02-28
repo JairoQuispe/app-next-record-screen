@@ -1,12 +1,22 @@
+import { lazy, Suspense } from "react";
 import { useSetupScreen } from "../model/useSetupScreen";
 import { VisualizerBars } from "./setup/VisualizerBars";
 import { StatusHero } from "./setup/StatusHero";
-import { AudioSourceConfig } from "./setup/AudioSourceConfig";
-import { AudioEnhancementConfig } from "./setup/AudioEnhancementConfig";
 import { RecordingButtons } from "./setup/RecordingButtons";
-import { TranscriptionPanel } from "./setup/TranscriptionPanel";
-import { PlaybackSection } from "./setup/PlaybackSection";
 import type { AudioRecorderState, AudioRecorderActions } from "../model/types";
+
+const AudioSourceConfig = lazy(() =>
+  import("./setup/AudioSourceConfig").then((m) => ({ default: m.AudioSourceConfig }))
+);
+const AudioEnhancementConfig = lazy(() =>
+  import("./setup/AudioEnhancementConfig").then((m) => ({ default: m.AudioEnhancementConfig }))
+);
+const TranscriptionPanel = lazy(() =>
+  import("./setup/TranscriptionPanel").then((m) => ({ default: m.TranscriptionPanel }))
+);
+const PlaybackSection = lazy(() =>
+  import("./setup/PlaybackSection").then((m) => ({ default: m.PlaybackSection }))
+);
 
 interface SetupScreenProps {
   recorder: AudioRecorderState & AudioRecorderActions;
@@ -30,33 +40,37 @@ export function SetupScreen({ recorder, nativeWavPath, animateIn }: SetupScreenP
 
         <div className="neo-setup-rec-controls">
           {s.showConfigPanel && (s.isIdle || s.isStopped) && (
-            <AudioSourceConfig
-              isMicChecked={s.isMicChecked}
-              isSystemChecked={s.isSystemChecked}
-              isSystemAudioSupported={s.isSystemAudioSupported}
-              usesMicrophone={s.usesMicrophone}
-              shouldShowPermissionAction={s.shouldShowPermissionAction}
-              isBusy={s.isBusy}
-              availableMicrophones={s.availableMicrophones}
-              selectedMicrophoneId={s.selectedMicrophoneId}
-              onToggleMic={s.toggleMic}
-              onToggleSystem={s.toggleSystem}
-              onRequestPermission={() => void s.requestMicrophonePermission()}
-              onSelectMicrophone={s.selectMicrophone}
-            />
+            <Suspense fallback={null}>
+              <AudioSourceConfig
+                isMicChecked={s.isMicChecked}
+                isSystemChecked={s.isSystemChecked}
+                isSystemAudioSupported={s.isSystemAudioSupported}
+                usesMicrophone={s.usesMicrophone}
+                shouldShowPermissionAction={s.shouldShowPermissionAction}
+                isBusy={s.isBusy}
+                availableMicrophones={s.availableMicrophones}
+                selectedMicrophoneId={s.selectedMicrophoneId}
+                onToggleMic={s.toggleMic}
+                onToggleSystem={s.toggleSystem}
+                onRequestPermission={() => void s.requestMicrophonePermission()}
+                onSelectMicrophone={s.selectMicrophone}
+              />
+            </Suspense>
           )}
 
           {s.showGearPanel && (s.isIdle || s.isStopped) && (
-            <AudioEnhancementConfig
-              denoiseEnabled={s.denoiseEnabled}
-              denoiseIntensity={s.denoiseIntensity}
-              normalizeEnabled={s.normalizeEnabled}
-              realtimeTranscriptionEnabled={s.transcriptionEnabled}
-              onSetDenoiseEnabled={s.setDenoiseEnabled}
-              onSetDenoiseIntensity={s.setDenoiseIntensity}
-              onSetNormalizeEnabled={s.setNormalizeEnabled}
-              onSetRealtimeTranscriptionEnabled={s.setTranscriptionEnabled}
-            />
+            <Suspense fallback={null}>
+              <AudioEnhancementConfig
+                denoiseEnabled={s.denoiseEnabled}
+                denoiseIntensity={s.denoiseIntensity}
+                normalizeEnabled={s.normalizeEnabled}
+                realtimeTranscriptionEnabled={s.transcriptionEnabled}
+                onSetDenoiseEnabled={s.setDenoiseEnabled}
+                onSetDenoiseIntensity={s.setDenoiseIntensity}
+                onSetNormalizeEnabled={s.setNormalizeEnabled}
+                onSetRealtimeTranscriptionEnabled={s.setTranscriptionEnabled}
+              />
+            </Suspense>
           )}
 
           {s.isBusy && (
@@ -81,28 +95,32 @@ export function SetupScreen({ recorder, nativeWavPath, animateIn }: SetupScreenP
         </div>
 
         {(s.isBusy || s.transcription.finalText || s.diarization.status !== "idle") && (
-          <TranscriptionPanel
-            activeTab={s.activeTab}
-            onSetActiveTab={s.setActiveTab}
-            transcription={s.transcription}
-            diarization={s.diarization}
-            isBusy={s.isBusy}
-          />
+          <Suspense fallback={null}>
+            <TranscriptionPanel
+              activeTab={s.activeTab}
+              onSetActiveTab={s.setActiveTab}
+              transcription={s.transcription}
+              diarization={s.diarization}
+              isBusy={s.isBusy}
+            />
+          </Suspense>
         )}
 
         {!s.isSupported && <div className="neo-error" role="alert">Tu dispositivo no soporta grabación de audio.</div>}
         {s.errorMessage && <div className="neo-error" role="alert">{s.errorMessage}</div>}
 
         {s.audioUrl && (
-          <PlaybackSection
-            audioUrl={s.audioUrl}
-            nativeWavPath={nativeWavPath ?? null}
-            noiseSuppression={s.noiseSuppression}
-            cloudTranscription={s.cloudTranscription}
-            playbackMode={s.playbackMode}
-            onSetPlaybackMode={s.setPlaybackMode}
-            onSave={() => void s.saveRecording()}
-          />
+          <Suspense fallback={null}>
+            <PlaybackSection
+              audioUrl={s.audioUrl}
+              nativeWavPath={nativeWavPath ?? null}
+              noiseSuppression={s.noiseSuppression}
+              cloudTranscription={s.cloudTranscription}
+              playbackMode={s.playbackMode}
+              onSetPlaybackMode={s.setPlaybackMode}
+              onSave={() => void s.saveRecording()}
+            />
+          </Suspense>
         )}
       </div>
     </main>

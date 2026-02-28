@@ -53,26 +53,46 @@ function getPermissionErrorMessage(error: unknown): string {
   return "Microphone permission denied or unavailable.";
 }
 
+const SYSTEM_AUDIO_UNAVAILABLE_DEFAULT_MESSAGE =
+  "No audio track was received. In the picker, select a screen or tab and enable 'Also share system/tab audio' at the bottom.";
+
+const SYSTEM_AUDIO_UNAVAILABLE_MESSAGES: Record<string, string> = {
+  browser:
+    "No tab audio was shared. Select a browser tab and check 'Also share tab audio' at the bottom of the picker.",
+  window:
+    "Window sharing does not include audio. Select the 'Entire Screen' tab in the picker and check 'Also share system audio'.",
+  monitor:
+    "No system audio was shared. Make sure 'Also share system audio' is checked at the bottom of the screen picker.",
+};
+
 function getSystemAudioUnavailableMessage(displaySurface: string | undefined): string {
-  if (displaySurface === "browser") {
-    return "No tab audio was shared. Select a browser tab and check 'Also share tab audio' at the bottom of the picker.";
+  if (!displaySurface) {
+    return SYSTEM_AUDIO_UNAVAILABLE_DEFAULT_MESSAGE;
   }
 
-  if (displaySurface === "window") {
-    return "Window sharing does not include audio. Select the 'Entire Screen' tab in the picker and check 'Also share system audio'.";
-  }
-
-  if (displaySurface === "monitor") {
-    return "No system audio was shared. Make sure 'Also share system audio' is checked at the bottom of the screen picker.";
-  }
-
-  return "No audio track was received. In the picker, select a screen or tab and enable 'Also share system/tab audio' at the bottom.";
+  return SYSTEM_AUDIO_UNAVAILABLE_MESSAGES[displaySurface] ?? SYSTEM_AUDIO_UNAVAILABLE_DEFAULT_MESSAGE;
 }
 
 function revokeObjectUrlIfBlob(url: string | null): void {
   if (url?.startsWith("blob:")) {
     URL.revokeObjectURL(url);
   }
+}
+
+function isRecorderBusy(status: RecorderStatus): boolean {
+  return status === "recording" || status === "paused";
+}
+
+function isMicrophoneSource(source: AudioInputSource): boolean {
+  return source === "microphone" || source === "mixed";
+}
+
+function toErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function stopMediaStream(stream: MediaStream | null): void {
+  stream?.getTracks().forEach((track) => track.stop());
 }
 
 export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
@@ -114,7 +134,6 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
   const mixSourceNodesRef = useRef<MediaStreamAudioSourceNode[]>([]);
   const nativeCaptureActiveRef = useRef(false);
   const nativeUnlistenRef = useRef<(() => void) | null>(null);
-  const fakeSpectrumTimerRef = useRef<number | null>(null);
 
   const isSupported = IS_MEDIA_SUPPORTED;
 
@@ -215,20 +234,14 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     stopSpectrumMonitor();
     setRecordingStream(null);
 
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
+    stopMediaStream(streamRef.current);
+    streamRef.current = null;
 
-    if (displayStreamRef.current) {
-      displayStreamRef.current.getTracks().forEach((track) => track.stop());
-      displayStreamRef.current = null;
-    }
+    stopMediaStream(displayStreamRef.current);
+    displayStreamRef.current = null;
 
-    if (microphoneStreamRef.current) {
-      microphoneStreamRef.current.getTracks().forEach((track) => track.stop());
-      microphoneStreamRef.current = null;
-    }
+    stopMediaStream(microphoneStreamRef.current);
+    microphoneStreamRef.current = null;
 
     mixSourceNodesRef.current.forEach((node) => node.disconnect());
     mixSourceNodesRef.current = [];
@@ -385,10 +398,6 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       nativeUnlistenRef.current();
       nativeUnlistenRef.current = null;
     }
-    if (fakeSpectrumTimerRef.current !== null) {
-      window.clearInterval(fakeSpectrumTimerRef.current);
-      fakeSpectrumTimerRef.current = null;
-    }
     setSpectrumLevels(SPECTRUM_ZERO_LEVELS);
   }, []);
 
@@ -424,9 +433,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
         // For mixed mode, the MediaRecorder onstop handler sets the mic audio URL
       } catch (error) {
         nativeCaptureActiveRef.current = false;
-        setErrorMessage(
-          error instanceof Error ? error.message : "Failed to stop system audio capture.",
-        );
+        setErrorMessage(toErrorMessage(error, "Failed to stop system audio capture."));
       }
 
       clearStream();
@@ -520,7 +527,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
 
       setErrorMessage("No recording data available to save.");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Failed to save recording.");
+      setErrorMessage(toErrorMessage(error, "Failed to save recording."));
     }
   }, [audioUrl]);
 
@@ -590,6 +597,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
 
   const startRecording = useCallback(async () => {
     const isNativeSystemOnly = IS_TAURI && audioInputSource === "system";
+    const sourceUsesMicrophone = isMicrophoneSource(audioInputSource);
 
     if (!isSupported && !isNativeSystemOnly) {
       console.error("[startRecording] Not supported, aborting");
@@ -598,13 +606,13 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       return;
     }
 
-    if ((audioInputSource === "microphone" || audioInputSource === "mixed") && !isMicrophoneEnabled) {
+    if (sourceUsesMicrophone && !isMicrophoneEnabled) {
       setStatus("error");
       setErrorMessage("Microphone is disabled. Enable it before recording.");
       return;
     }
 
-    if ((audioInputSource === "microphone" || audioInputSource === "mixed") && microphonePermission !== "granted") {
+    if (sourceUsesMicrophone && microphonePermission !== "granted") {
       const hasPermission = await requestMicrophonePermission();
       if (!hasPermission) {
         return;
@@ -618,7 +626,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       setErrorMessage(null);
       resetRecordingData();
 
-      if (useNativeSystemCapture && audioInputSource === "system") {
+      if (useNativeSystemCapture) {
         // Pure system audio: use native Rust capture only
         console.log("[useAudioRecorder] Starting native system audio capture...");
         await startNativeSystemAudioCapture();
@@ -719,7 +727,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
     } catch (error) {
       console.error("[startRecording] CATCH error:", error);
       setStatus("error");
-      setErrorMessage(error instanceof Error ? error.message : getPermissionErrorMessage(error));
+      setErrorMessage(toErrorMessage(error, getPermissionErrorMessage(error)));
       stopTimer();
       stopNativeSpectrum();
       clearStream();
@@ -747,7 +755,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
   ]);
 
   const toggleMicrophone = useCallback(async () => {
-    if (status === "recording" || status === "paused") {
+    if (isRecorderBusy(status)) {
       return;
     }
 
@@ -771,7 +779,7 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
   }, []);
 
   const setAudioInputSource = useCallback((source: AudioInputSource) => {
-    if (status === "recording" || status === "paused") {
+    if (isRecorderBusy(status)) {
       return;
     }
 

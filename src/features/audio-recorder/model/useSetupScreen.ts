@@ -5,13 +5,25 @@ import { useSpeakerDiarization } from "./useSpeakerDiarization";
 import { useAudioSettings } from "./useAudioSettings";
 import { useNoiseSuppression } from "./useNoiseSuppression";
 import { useCloudTranscription } from "./useCloudTranscription";
-import type { AudioRecorderState, AudioRecorderActions } from "./types";
+import type { AudioInputSource, AudioRecorderState, AudioRecorderActions } from "./types";
 import type { TranscriptionTab } from "../ui/setup/TranscriptionPanel";
 
 interface UseSetupScreenOptions {
   recorder: AudioRecorderState & AudioRecorderActions;
   nativeWavPath?: string | null;
 }
+
+const NEXT_SOURCE_ON_MIC_TOGGLE: Record<AudioInputSource, AudioInputSource> = {
+  microphone: "microphone",
+  mixed: "system",
+  system: "mixed",
+};
+
+const NEXT_SOURCE_ON_SYSTEM_TOGGLE: Record<AudioInputSource, AudioInputSource> = {
+  microphone: "mixed",
+  mixed: "microphone",
+  system: "system",
+};
 
 export function useSetupScreen({ recorder, nativeWavPath }: UseSetupScreenOptions) {
   const {
@@ -44,7 +56,7 @@ export function useSetupScreen({ recorder, nativeWavPath }: UseSetupScreenOption
   // ── Derived state ──
   const isMicChecked = audioInputSource === "microphone" || audioInputSource === "mixed";
   const isSystemChecked = audioInputSource === "system" || audioInputSource === "mixed";
-  const usesMicrophone = audioInputSource === "microphone" || audioInputSource === "mixed";
+  const usesMicrophone = isMicChecked;
   const shouldShowPermissionAction =
     isSupported && usesMicrophone &&
     (microphonePermission === "prompt" || microphonePermission === "denied");
@@ -66,6 +78,8 @@ export function useSetupScreen({ recorder, nativeWavPath }: UseSetupScreenOption
   // ── Transcription & diarization ──
   const transcription = useTranscription(isBusy, recordingStream, "es");
   const diarization = useSpeakerDiarization("es");
+  const { startDiarization } = diarization;
+  const { enhance } = noiseSuppression;
   const prevStatusRef = useRef(status);
 
   const hasExtraContent =
@@ -74,32 +88,37 @@ export function useSetupScreen({ recorder, nativeWavPath }: UseSetupScreenOption
 
   // ── Auto-trigger diarization + noise suppression on stop ──
   useEffect(() => {
-    if (prevStatusRef.current === "recording" || prevStatusRef.current === "paused") {
-      if (status === "stopped" && audioUrl) {
-        diarization.startDiarization(audioUrl);
-        setActiveTab("speakers");
-        if (denoiseEnabled && denoiseIntensity > 0) {
-          noiseSuppression.enhance(audioUrl, nativeWavPath ?? null, denoiseIntensity, normalizeEnabled);
-        }
+    const wasBusy = prevStatusRef.current === "recording" || prevStatusRef.current === "paused";
+    if (wasBusy && status === "stopped" && audioUrl) {
+      startDiarization(audioUrl);
+      setActiveTab("speakers");
+      if (denoiseEnabled && denoiseIntensity > 0) {
+        enhance(audioUrl, nativeWavPath ?? null, denoiseIntensity, normalizeEnabled);
       }
     }
+
     prevStatusRef.current = status;
-  }, [status, audioUrl]);
+  }, [
+    audioUrl,
+    denoiseEnabled,
+    denoiseIntensity,
+    enhance,
+    nativeWavPath,
+    normalizeEnabled,
+    startDiarization,
+    status,
+  ]);
 
   // ── Source toggles (stable callbacks for memoized children) ──
   const toggleMic = useCallback(() => {
     if (isBusy) return;
-    if (isMicChecked && isSystemChecked) { setAudioInputSource("system"); return; }
-    if (!isMicChecked && isSystemChecked) { setAudioInputSource("mixed"); return; }
-    setAudioInputSource("microphone");
-  }, [isBusy, isMicChecked, isSystemChecked, setAudioInputSource]);
+    setAudioInputSource(NEXT_SOURCE_ON_MIC_TOGGLE[audioInputSource]);
+  }, [audioInputSource, isBusy, setAudioInputSource]);
 
   const toggleSystem = useCallback(() => {
     if (isBusy || !isSystemAudioSupported) return;
-    if (isMicChecked && isSystemChecked) { setAudioInputSource("microphone"); return; }
-    if (isMicChecked && !isSystemChecked) { setAudioInputSource("mixed"); return; }
-    setAudioInputSource("system");
-  }, [isBusy, isSystemAudioSupported, isMicChecked, isSystemChecked, setAudioInputSource]);
+    setAudioInputSource(NEXT_SOURCE_ON_SYSTEM_TOGGLE[audioInputSource]);
+  }, [audioInputSource, isBusy, isSystemAudioSupported, setAudioInputSource]);
 
   // ── Panel toggles (stable callbacks) ──
   const toggleConfigPanel = useCallback(() => setShowConfigPanel((v) => !v), []);

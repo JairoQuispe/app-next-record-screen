@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { SelectionPage } from "@features/selection/ui/SelectionPage";
 import { TitleBar } from "@shared/ui/titlebar/TitleBar";
 import { isTauriRuntime } from "@shared/lib/runtime/isTauriRuntime";
@@ -6,8 +6,10 @@ import "./App.css";
 
 const IS_TAURI = isTauriRuntime();
 
+const loadAudioRecorderPage = () => import("@features/audio-recorder/ui/AudioRecorderPage");
+
 const AudioRecorderPage = lazy(() =>
-  import("@features/audio-recorder/ui/AudioRecorderPage").then((m) => ({ default: m.AudioRecorderPage }))
+  loadAudioRecorderPage().then((m) => ({ default: m.AudioRecorderPage }))
 );
 
 type AppMode = "selection" | "audio" | "screen";
@@ -19,6 +21,16 @@ type TitleBarState = {
 function App() {
   const [mode, setMode] = useState<AppMode>("selection");
   const [titleBarState, setTitleBarState] = useState<TitleBarState>({});
+
+  useEffect(() => {
+    const preloadTimer = window.setTimeout(() => {
+      void loadAudioRecorderPage();
+    }, 1200);
+
+    return () => {
+      window.clearTimeout(preloadTimer);
+    };
+  }, []);
 
   const setViewTransition = useCallback((transition?: string) => {
     if (typeof document === "undefined") return;
@@ -48,6 +60,8 @@ function App() {
   }, [setViewTransition]);
 
   const handleSelectAudio = useCallback(() => {
+    void loadAudioRecorderPage();
+
     if (IS_TAURI) {
       setTitleBarState({
         title: "GRABAR AUDIO",

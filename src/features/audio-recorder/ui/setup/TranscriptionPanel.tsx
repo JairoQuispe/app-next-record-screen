@@ -14,6 +14,13 @@ function formatMs(ms: number): string {
 // --- Sub-panels (memoized) ---
 
 const SPEAKER_PALETTE = ["#FF40A0", "#39FF14", "#FDC500", "#A37DFF", "#19c4ae"] as const;
+const DIARIZATION_STAGE_LABELS: Record<string, string> = {
+  "extracting-features": "Extrayendo características de audio...",
+  clustering: "Identificando hablantes...",
+  "loading-model": "Cargando modelo de transcripción...",
+  transcribing: "Transcribiendo segmentos...",
+  summarizing: "Generando resumen...",
+};
 
 const SpeakerSegmentList = memo(function SpeakerSegmentList({ segments }: { segments: SpeakerSegment[] }) {
   const speakerColors = useMemo(() => {
@@ -71,13 +78,21 @@ const SpeakerStatsPanel = memo(function SpeakerStatsPanel({ stats }: { stats: Sp
 });
 
 const ParticipantSummaryPanel = memo(function ParticipantSummaryPanel({ summaries, stats }: { summaries: ParticipantSummary[]; stats: SpeakerStats[] }) {
+  const speakerStatsById = useMemo(() => {
+    const byId = new Map<string, SpeakerStats>();
+    for (const stat of stats) {
+      byId.set(stat.speakerId, stat);
+    }
+    return byId;
+  }, [stats]);
+
   if (summaries.length === 0) {
     return <p className="neo-diarize-empty">No hay resumen disponible.</p>;
   }
   return (
     <div className="neo-diarize-summaries">
       {summaries.map((s) => {
-        const speakerStat = stats.find((st) => st.speakerId === s.speakerId);
+        const speakerStat = speakerStatsById.get(s.speakerId);
         return (
           <div key={s.speakerId} className="neo-diarize-summary-card">
             <div className="neo-diarize-summary-header">
@@ -89,7 +104,7 @@ const ParticipantSummaryPanel = memo(function ParticipantSummaryPanel({ summarie
             {s.headline && <p className="neo-diarize-summary-headline">{s.headline}</p>}
             {s.bulletPoints.length > 0 && (
               <ul className="neo-diarize-summary-bullets">
-                {s.bulletPoints.map((bp, i) => <li key={i}>{bp}</li>)}
+                {s.bulletPoints.map((bp) => <li key={`${s.speakerId}-${bp}`}>{bp}</li>)}
               </ul>
             )}
             {s.keywords.length > 0 && (
@@ -133,6 +148,10 @@ export type { TranscriptionTab };
 export function TranscriptionPanel({
   activeTab, onSetActiveTab, transcription, diarization, isBusy,
 }: TranscriptionPanelProps) {
+  const stageLabel = diarization.stage
+    ? (DIARIZATION_STAGE_LABELS[diarization.stage] ?? "Procesando...")
+    : "Procesando...";
+
   return (
     <div className="neo-transcription-panel" role="log" aria-live="polite" aria-label="Transcripción">
       <div className="neo-transcription-header">
@@ -213,12 +232,7 @@ export function TranscriptionPanel({
                 <div className="neo-diarize-progress-fill" style={{ width: `${diarization.progress}%` }} />
               </div>
               <span className="neo-diarize-progress-label">
-                {diarization.stage === "extracting-features" && "Extrayendo características de audio..."}
-                {diarization.stage === "clustering" && "Identificando hablantes..."}
-                {diarization.stage === "loading-model" && "Cargando modelo de transcripción..."}
-                {diarization.stage === "transcribing" && "Transcribiendo segmentos..."}
-                {diarization.stage === "summarizing" && "Generando resumen..."}
-                {!diarization.stage && "Procesando..."}
+                {stageLabel}
               </span>
             </div>
           )}
