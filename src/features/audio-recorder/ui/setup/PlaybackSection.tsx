@@ -72,17 +72,46 @@ export const PlaybackSection = memo(function PlaybackSection({
         className="neo-setup-audio-player"
       />
 
-      {IS_TAURI ? (
-        <button type="button" className="neo-setup-save-btn" onClick={onSave}>
-          GUARDAR AUDIO
-        </button>
-      ) : (
-        <a href={audioUrl} download="recogni-audio.webm" className="neo-setup-save-btn">
-          DESCARGAR AUDIO
-        </a>
-      )}
+      {/* ── Action Buttons Row ── */}
+      <div className="neo-playback-actions">
+        {IS_TAURI ? (
+          <button type="button" className="neo-setup-save-btn" onClick={onSave}>
+            GUARDAR AUDIO
+          </button>
+        ) : (
+          <a href={audioUrl} download="recogning-audio.webm" className="neo-setup-save-btn">
+            DESCARGAR AUDIO
+          </a>
+        )}
 
-      {/* ── Cloud Transcription ── */}
+        {cloudTranscription.isTranscribing ? (
+          <button
+            type="button"
+            className="neo-setup-transcribe-btn neo-setup-transcribe-btn--cancel"
+            onClick={cloudTranscription.cancel}
+          >
+            CANCELAR
+          </button>
+        ) : cloudTranscription.transcriptionText ? (
+          <button
+            type="button"
+            className="neo-setup-transcribe-btn neo-setup-transcribe-btn--done"
+            onClick={() => void cloudTranscription.downloadTranscription()}
+          >
+            GUARDAR TXT
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="neo-setup-transcribe-btn"
+            onClick={() => void cloudTranscription.transcribe(audioUrl, nativeWavPath)}
+          >
+            TRANSCRIBIR
+          </button>
+        )}
+      </div>
+
+      {/* ── Cloud Transcription Progress ── */}
       {cloudTranscription.isTranscribing && (
         <div className="neo-transcribe-progress">
           <div className="neo-transcribe-progress-bar">
@@ -96,32 +125,6 @@ export const PlaybackSection = memo(function PlaybackSection({
 
       {cloudTranscription.error && (
         <div className="neo-enhance-error">{cloudTranscription.error}</div>
-      )}
-
-      {cloudTranscription.isTranscribing ? (
-        <button
-          type="button"
-          className="neo-setup-transcribe-btn neo-setup-transcribe-btn--cancel"
-          onClick={cloudTranscription.cancel}
-        >
-          CANCELAR TRANSCRIPCIÓN
-        </button>
-      ) : cloudTranscription.transcriptionText ? (
-        <button
-          type="button"
-          className="neo-setup-transcribe-btn neo-setup-transcribe-btn--done"
-          onClick={() => void cloudTranscription.downloadTranscription()}
-        >
-          DESCARGAR TRANSCRIPCIÓN
-        </button>
-      ) : (
-        <button
-          type="button"
-          className="neo-setup-transcribe-btn"
-          onClick={() => void cloudTranscription.transcribe(audioUrl, nativeWavPath)}
-        >
-          DESCARGAR TRANSCRIPCIÓN
-        </button>
       )}
     </div>
   );

@@ -67,6 +67,8 @@ function buildTranscriptionFileContent(
   return lines.join("\n");
 }
 
+const TARGET_SAMPLE_RATE = 16_000;
+
 async function readAudioAsBlob(audioUrl: string, nativeWavPath: string | null): Promise<Blob> {
   if (IS_TAURI && nativeWavPath) {
     const { readFile } = await import("@tauri-apps/plugin-fs");
@@ -77,6 +79,68 @@ async function readAudioAsBlob(audioUrl: string, nativeWavPath: string | null): 
   // Browser path: fetch the blob URL
   const response = await fetch(audioUrl);
   return await response.blob();
+}
+
+/**
+ * Downsample audio to 16kHz mono 16-bit WAV for cloud transcription.
+ * Reduces ~28MB (stereo 48kHz f32) → ~2.3MB (mono 16kHz i16).
+ */
+async function downsampleToWav(audioBlob: Blob): Promise<Blob> {
+  const arrayBuffer = await audioBlob.arrayBuffer();
+  const audioCtx = new AudioContext();
+  const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+  await audioCtx.close();
+
+  // Resample to 16kHz mono via OfflineAudioContext
+  const numSamples = Math.ceil(decoded.duration * TARGET_SAMPLE_RATE);
+  const offline = new OfflineAudioContext(1, numSamples, TARGET_SAMPLE_RATE);
+  const source = offline.createBufferSource();
+  source.buffer = decoded;
+  source.connect(offline.destination);
+  source.start(0);
+  const rendered = await offline.startRendering();
+
+  const pcm = rendered.getChannelData(0);
+
+  // Encode as 16-bit PCM WAV
+  const dataBytes = pcm.length * 2;
+  const buffer = new ArrayBuffer(44 + dataBytes);
+  const view = new DataView(buffer);
+
+  // RIFF header
+  writeString(view, 0, "RIFF");
+  view.setUint32(4, 36 + dataBytes, true);
+  writeString(view, 8, "WAVE");
+
+  // fmt chunk
+  writeString(view, 12, "fmt ");
+  view.setUint32(16, 16, true);           // chunk size
+  view.setUint16(20, 1, true);            // PCM
+  view.setUint16(22, 1, true);            // mono
+  view.setUint32(24, TARGET_SAMPLE_RATE, true);
+  view.setUint32(28, TARGET_SAMPLE_RATE * 2, true); // byte rate
+  view.setUint16(32, 2, true);            // block align
+  view.setUint16(34, 16, true);           // bits per sample
+
+  // data chunk
+  writeString(view, 36, "data");
+  view.setUint32(40, dataBytes, true);
+
+  // Write PCM samples as int16
+  let offset = 44;
+  for (let i = 0; i < pcm.length; i++) {
+    const clamped = Math.max(-1, Math.min(1, pcm[i]));
+    view.setInt16(offset, clamped * 0x7FFF, true);
+    offset += 2;
+  }
+
+  return new Blob([buffer], { type: "audio/wav" });
+}
+
+function writeString(view: DataView, offset: number, str: string) {
+  for (let i = 0; i < str.length; i++) {
+    view.setUint8(offset + i, str.charCodeAt(i));
+  }
 }
 
 /**
@@ -134,13 +198,19 @@ export function useCloudTranscription(): CloudTranscriptionState & CloudTranscri
 
       try {
         // Step 1: Read audio as binary blob
-        setProgress(20);
-        const audioBlob = await readAudioAsBlob(audioUrl, nativeWavPath);
+        setProgress(15);
+        const rawBlob = await readAudioAsBlob(audioUrl, nativeWavPath);
 
         if (controller.signal.aborted) return;
-        setProgress(40);
 
-        // Step 2: POST binary via FormData to Worker
+        // Step 2: Downsample to 16kHz mono 16-bit WAV (reduces ~28MB → ~2MB)
+        setProgress(30);
+        const audioBlob = await downsampleToWav(rawBlob);
+
+        if (controller.signal.aborted) return;
+        setProgress(50);
+
+        // Step 3: POST binary via FormData to Worker
         const formData = new FormData();
         formData.append("audio", audioBlob, "audio.wav");
         formData.append("language", language);
@@ -197,7 +267,7 @@ export function useCloudTranscription(): CloudTranscriptionState & CloudTranscri
         const { writeTextFile } = await import("@tauri-apps/plugin-fs");
 
         const outputPath = await save({
-          defaultPath: "recogni-transcripcion.txt",
+          defaultPath: "recogning-transcripcion.txt",
           filters: [{ name: "Texto", extensions: ["txt"] }],
         });
 
@@ -214,7 +284,7 @@ export function useCloudTranscription(): CloudTranscriptionState & CloudTranscri
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "recogni-transcripcion.txt";
+    a.download = "recogning-transcripcion.txt";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

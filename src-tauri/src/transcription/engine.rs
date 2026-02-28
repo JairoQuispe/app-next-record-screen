@@ -138,7 +138,7 @@ impl MoonshineEngine {
             .run(ort::inputs!["input_values" => encoder_input])
             .map_err(|e| AppError::Transcription(format!("Encoder run error: {e}")))?;
 
-        // Extract encoder hidden states as flat data + shape
+        // Extract encoder hidden states — shared across all decoder steps (never mutated)
         let (enc_shape, enc_data) = encoder_outputs[0]
             .try_extract_tensor::<f32>()
             .map_err(|e| AppError::Transcription(format!("Encoder output extract error: {e}")))?;
@@ -167,7 +167,7 @@ impl MoonshineEngine {
                     kv_cache.push(KvEntry {
                         name: format!("past_key_values.{layer}.{module}.{kv}"),
                         shape: vec![1, num_heads as i64, 1, dim_kv as i64],
-                        data: vec![0.0f32; num_heads * 1 * dim_kv],
+                        data: vec![0.0f32; num_heads * dim_kv],
                     });
                 }
             }
@@ -182,6 +182,9 @@ impl MoonshineEngine {
             let input_ids_val = Value::from_array(([1i64, 1], vec![last_token]))
                 .map_err(|e| AppError::Transcription(format!("Input IDs error: {e}")))?;
 
+            // Re-wrap the same data without cloning the full tensor — ort requires
+            // owned Vec, so we must clone, but we pre-allocated enc_data_vec once.
+            // Future: if ort adds Value::from_slice this clone can be removed entirely.
             let enc_hs_val = Value::from_array((enc_shape_vec.as_slice(), enc_data_vec.clone()))
                 .map_err(|e| AppError::Transcription(format!("Encoder HS error: {e}")))?;
 
@@ -214,9 +217,8 @@ impl MoonshineEngine {
             let next_token: i64 = logits_data[offset..]
                 .iter()
                 .enumerate()
-                .max_by(|(_i_a, a): &(usize, &f32), (_i_b, b): &(usize, &f32)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
-                .map(|(i, _)| i as i64)
-                .unwrap_or(self.config.eos_token_id);
+                .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
+                .map_or(self.config.eos_token_id, |(i, _)| i as i64);
 
             if next_token == self.config.eos_token_id {
                 break;
@@ -264,17 +266,12 @@ impl MoonshineEngine {
 /// Simple RMS voice activity detection.
 fn has_voice_activity(audio: &[f32]) -> bool {
     const VAD_RMS_THRESHOLD: f32 = 0.015;
+    const STEP: usize = 4;
 
-    let mut sum_sq: f64 = 0.0;
-    let step = 4;
-    let mut count = 0usize;
-    let mut i = 0;
-    while i < audio.len() {
-        let s = audio[i] as f64;
-        sum_sq += s * s;
-        count += 1;
-        i += step;
-    }
+    let (sum_sq, count) = audio.iter().step_by(STEP).fold(
+        (0.0f64, 0usize),
+        |(sum, cnt), &s| (sum + (s as f64) * (s as f64), cnt + 1),
+    );
     let rms = (sum_sq / count.max(1) as f64).sqrt() as f32;
     rms >= VAD_RMS_THRESHOLD
 }
@@ -285,7 +282,7 @@ fn normalize_audio(audio: &[f32]) -> Vec<f32> {
     const MIN_PEAK: f32 = 0.01;
 
     let peak = audio.iter().map(|s| s.abs()).fold(0.0f32, f32::max);
-    if peak < MIN_PEAK || peak >= TARGET {
+    if !(MIN_PEAK..TARGET).contains(&peak) {
         return audio.to_vec();
     }
     let scale = TARGET / peak;
@@ -314,11 +311,11 @@ fn is_hallucination(text: &str) -> bool {
         return true;
     }
 
-    // Repeated 3-grams
-    let mut ngrams = std::collections::HashMap::new();
-    for i in 0..words.len().saturating_sub(2) {
-        let gram = format!("{} {} {}", words[i], words[i + 1], words[i + 2]);
-        let count = ngrams.entry(gram).or_insert(0u32);
+    // Repeated 3-grams — use tuple keys to avoid String allocation per n-gram
+    let mut ngrams: std::collections::HashMap<(&str, &str, &str), u32> =
+        std::collections::HashMap::new();
+    for window in words.windows(3) {
+        let count = ngrams.entry((window[0], window[1], window[2])).or_insert(0);
         *count += 1;
         if *count >= 3 {
             return true;

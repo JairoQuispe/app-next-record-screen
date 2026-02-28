@@ -1,12 +1,12 @@
 [package]
 name = "recognimg"
 version = "0.1.0"
-description = "A Tauri App"
+description = "Recogning — Desktop audio recording, enhancement & transcription"
 authors = ["you"]
 edition = "2021"
 
 [lib]
-name = "recogni_lib"
+name = "recogning_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
@@ -59,3 +59,6 @@ redundant_clone = "warn"
 needless_collect = "warn"
 large_enum_variant = "warn"
 manual_let_else = "warn"
+cloned_instead_of_copied = "warn"
+unnecessary_wraps = "warn"
+map_unwrap_or = "warn"

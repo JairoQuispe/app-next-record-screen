@@ -30,7 +30,7 @@ pub async fn start_system_audio_capture(
             .unwrap_or_default()
             .as_millis();
         let output_path = temp_dir
-            .join(format!("recogni_system_audio_{timestamp}.wav"))
+            .join(format!("recogning_capture_{timestamp}.wav"))
             .to_string_lossy()
             .to_string();
 
@@ -75,7 +75,7 @@ pub async fn enhance_audio(
             .unwrap_or_default()
             .as_millis();
         let output_path = temp_dir
-            .join(format!("recogni_enhanced_{timestamp}.wav"))
+            .join(format!("recogning_enhanced_{timestamp}.wav"))
             .to_string_lossy()
             .to_string();
 
@@ -134,7 +134,7 @@ pub async fn transcription_load_model(
                 file_index: file_idx,
                 total_files: total,
                 bytes_downloaded: downloaded,
-                total_bytes: total_bytes,
+                total_bytes,
             });
         })?;
 

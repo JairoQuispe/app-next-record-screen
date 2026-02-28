@@ -151,10 +151,13 @@ fn write_wav_f32(path: &str, samples: &[f32], info: &WavInfo) -> Result<(), AppE
     writer.write_all(&header)
         .map_err(|e| AppError::AudioEnhance(format!("Write header: {e}")))?;
 
-    for &sample in samples {
-        writer.write_all(&sample.to_le_bytes())
-            .map_err(|e| AppError::AudioEnhance(format!("Write sample: {e}")))?;
-    }
+    // Bulk write: reinterpret &[f32] as &[u8] — f32 is already little-endian on x86.
+    // SAFETY: f32 has no alignment requirements stricter than u8 for byte access.
+    let byte_slice = unsafe {
+        std::slice::from_raw_parts(samples.as_ptr() as *const u8, samples.len() * 4)
+    };
+    writer.write_all(byte_slice)
+        .map_err(|e| AppError::AudioEnhance(format!("Write samples: {e}")))?;
 
     writer.flush()
         .map_err(|e| AppError::AudioEnhance(format!("Flush output: {e}")))?;
@@ -185,13 +188,9 @@ fn mono_to_multichannel(mono: &[f32], channels: u16) -> Vec<f32> {
         return mono.to_vec();
     }
     let ch = channels as usize;
-    let mut out = Vec::with_capacity(mono.len() * ch);
-    for &s in mono {
-        for _ in 0..ch {
-            out.push(s);
-        }
-    }
-    out
+    mono.iter()
+        .flat_map(|&s| std::iter::repeat_n(s, ch))
+        .collect()
 }
 
 /// Apply RNNoise denoising to mono f32 samples in [-1.0, 1.0] range.
@@ -209,7 +208,7 @@ fn denoise_mono(mono: &[f32], intensity: f32) -> Vec<f32> {
     let mut input_frame = [0.0f32; FRAME_SIZE];
     let mut output_frame = [0.0f32; FRAME_SIZE];
 
-    let total_frames = (mono.len() + FRAME_SIZE - 1) / FRAME_SIZE;
+    let total_frames = mono.len().div_ceil(FRAME_SIZE);
 
     for frame_idx in 0..total_frames {
         let start = frame_idx * FRAME_SIZE;
@@ -239,13 +238,7 @@ fn denoise_mono(mono: &[f32], intensity: f32) -> Vec<f32> {
 /// Peak normalize audio samples so the loudest sample reaches `target_peak`.
 /// `target_peak` is in linear scale (e.g., 0.89 ≈ -1dB).
 fn peak_normalize(samples: &mut [f32], target_peak: f32) {
-    let mut max_abs: f32 = 0.0;
-    for &s in samples.iter() {
-        let abs = s.abs();
-        if abs > max_abs {
-            max_abs = abs;
-        }
-    }
+    let max_abs = samples.iter().fold(0.0f32, |acc, s| acc.max(s.abs()));
 
     // Don't amplify near-silence or already-normalized audio
     if max_abs < 0.001 || (max_abs - target_peak).abs() < 0.01 {
@@ -262,20 +255,21 @@ fn peak_normalize(samples: &mut [f32], target_peak: f32) {
 fn apply_fade(samples: &mut [f32], sample_rate: u32, fade_ms: u32) {
     let fade_samples = (sample_rate as usize * fade_ms as usize) / 1000;
     let fade_samples = fade_samples.min(samples.len() / 2);
+    let inv_fade = 1.0 / fade_samples as f32;
 
     // Fade in
-    for i in 0..fade_samples {
-        let t = i as f32 / fade_samples as f32;
+    for (i, sample) in samples.iter_mut().take(fade_samples).enumerate() {
+        let t = i as f32 * inv_fade;
         let gain = 0.5 * (1.0 - (std::f32::consts::PI * t).cos());
-        samples[i] *= gain;
+        *sample *= gain;
     }
 
     // Fade out
     let len = samples.len();
-    for i in 0..fade_samples {
-        let t = i as f32 / fade_samples as f32;
+    for (i, sample) in samples[len - fade_samples..].iter_mut().enumerate() {
+        let t = (fade_samples - 1 - i) as f32 * inv_fade;
         let gain = 0.5 * (1.0 - (std::f32::consts::PI * t).cos());
-        samples[len - 1 - i] *= gain;
+        *sample *= gain;
     }
 }
 
@@ -404,10 +398,8 @@ impl RealtimeDenoiser {
             consumed += FRAME_SIZE;
         }
 
-        // Keep unconsumed samples for next call
-        let remaining: Vec<f32> = self.mono_buf[consumed..].to_vec();
-        self.mono_buf.clear();
-        self.mono_buf.extend_from_slice(&remaining);
+        // Keep unconsumed samples for next call — drain avoids extra allocation
+        self.mono_buf.drain(..consumed);
 
         // Write back to interleaved output
         // Only overwrite the portion we have processed mono for

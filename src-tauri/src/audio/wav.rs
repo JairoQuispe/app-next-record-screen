@@ -75,14 +75,20 @@ impl AudioWavWriter {
     }
 
     /// Write silence for `frame_count` frames.
+    ///
+    /// Uses a stack-allocated zero buffer to avoid heap allocation in the
+    /// capture hot path (rule: no allocations in audio capture loop).
     #[inline]
     pub fn write_silence(&mut self, frame_count: usize) -> Result<(), AppError> {
-        let byte_count = frame_count * self.format.channels as usize * 4; // 4 bytes per f32
-        // Zeros are valid IEEE 754 f32 (0.0)
-        let zeros = vec![0u8; byte_count];
-        self.writer.write_all(&zeros)
-            .map_err(|e| AppError::WavEncode(format!("Write silence: {e}")))?;
-        self.data_bytes_written += byte_count as u64;
+        const ZERO_BUF: [u8; 4096] = [0u8; 4096];
+        let mut remaining = frame_count * self.format.channels as usize * 4;
+        while remaining > 0 {
+            let n = remaining.min(ZERO_BUF.len());
+            self.writer.write_all(&ZERO_BUF[..n])
+                .map_err(|e| AppError::WavEncode(format!("Write silence: {e}")))?;
+            remaining -= n;
+        }
+        self.data_bytes_written += (frame_count * self.format.channels as usize * 4) as u64;
         Ok(())
     }
 

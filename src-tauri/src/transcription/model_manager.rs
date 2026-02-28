@@ -50,7 +50,7 @@ impl ModelManager {
             .ok_or_else(|| {
                 AppError::ModelDownload("Could not determine app data directory".into())
             })?;
-        Ok(base.join("recogni").join("models").join("moonshine-base"))
+        Ok(base.join("recogning").join("models").join("moonshine-base"))
     }
 
     /// Check if all model files are already cached.
@@ -116,7 +116,7 @@ impl ModelManager {
         use std::io::Write;
 
         let client = reqwest::blocking::Client::builder()
-            .user_agent("recogni/0.1.0")
+            .user_agent("recogning/0.1.0")
             .build()
             .map_err(|e| AppError::ModelDownload(format!("HTTP client error: {e}")))?;
 
@@ -200,7 +200,7 @@ impl ModelManager {
         eprintln!("[ModelManager] Downloading ONNX Runtime v{ORT_VERSION}...");
 
         let client = reqwest::blocking::Client::builder()
-            .user_agent("recogni/0.1.0")
+            .user_agent("recogning/0.1.0")
             .build()
             .map_err(|e| AppError::ModelDownload(format!("HTTP client error: {e}")))?;
 
