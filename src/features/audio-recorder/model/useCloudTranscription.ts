@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { isTauriRuntime } from "@shared/lib/runtime/isTauriRuntime";
+import { getFileStorageService } from "@shared/services/createServices";
 
 const IS_TAURI = isTauriRuntime();
 const WORKER_URL = import.meta.env.VITE_WHISPER_WORKER_URL as string | undefined;
@@ -71,9 +72,8 @@ const TARGET_SAMPLE_RATE = 16_000;
 
 async function readAudioAsBlob(audioUrl: string, nativeWavPath: string | null): Promise<Blob> {
   if (IS_TAURI && nativeWavPath) {
-    const { readFile } = await import("@tauri-apps/plugin-fs");
-    const bytes = await readFile(nativeWavPath);
-    return new Blob([bytes], { type: "audio/wav" });
+    const fileStorage = await getFileStorageService();
+    return fileStorage.readFileAsBlob(nativeWavPath, "audio/wav");
   }
 
   // Browser path: fetch the blob URL
@@ -261,34 +261,18 @@ export function useCloudTranscription(): CloudTranscriptionState & CloudTranscri
 
     const fileContent = buildTranscriptionFileContent(transcriptionText, segments, wordCount);
 
-    if (IS_TAURI) {
-      try {
-        const { save } = await import("@tauri-apps/plugin-dialog");
-        const { writeTextFile } = await import("@tauri-apps/plugin-fs");
+    try {
+      const { getFileStorageService } = await import("@shared/services/createServices");
+      const fileStorage = await getFileStorageService();
 
-        const outputPath = await save({
-          defaultPath: "recogning-transcripcion.txt",
-          filters: [{ name: "Texto", extensions: ["txt"] }],
-        });
-
-        if (!outputPath) return;
-        await writeTextFile(outputPath, fileContent);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Error al guardar la transcripción.");
-      }
-      return;
+      await fileStorage.saveTextFile(fileContent, {
+        defaultName: "recogning-transcripcion.txt",
+        extensions: ["txt"],
+        filterLabel: "Texto",
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al guardar la transcripción.");
     }
-
-    // Browser path: create blob and trigger download
-    const blob = new Blob([fileContent], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "recogning-transcripcion.txt";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   }, [transcriptionText, segments, wordCount]);
 
   return {

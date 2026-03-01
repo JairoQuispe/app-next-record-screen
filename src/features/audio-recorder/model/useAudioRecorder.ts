@@ -334,15 +334,11 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
       return;
     }
 
-    if (!IS_TAURI) {
-      return;
-    }
-
     try {
       setErrorMessage(null);
 
-      const { save } = await import("@tauri-apps/plugin-dialog");
-      const { readFile, writeFile } = await import("@tauri-apps/plugin-fs");
+      const { getFileStorageService } = await import("@shared/services/createServices");
+      const fileStorage = await getFileStorageService();
 
       const mimeType = recordedMimeTypeRef.current;
       const isWav = !!nativeWavPathRef.current;
@@ -355,29 +351,27 @@ export function useAudioRecorder(): AudioRecorderState & AudioRecorderActions {
             ? "mp4"
             : "webm";
 
-      const outputPath = await save({
-        defaultPath: `recogni-audio.${extension}`,
-        filters: [{ name: "Audio", extensions: [extension] }],
-      });
-
-      if (!outputPath) {
-        return;
-      }
+      // Get the data to save
+      let data: Uint8Array | Blob;
 
       if (nativeWavPathRef.current) {
-        const contents = await readFile(nativeWavPathRef.current);
-        await writeFile(outputPath, contents);
+        data = await fileStorage.readFile(nativeWavPathRef.current);
+      } else if (recordedBlobRef.current) {
+        data = recordedBlobRef.current;
+      } else {
+        setErrorMessage("No recording data available to save.");
         return;
       }
 
-      if (recordedBlobRef.current) {
-        const buffer = await recordedBlobRef.current.arrayBuffer();
-        const contents = new Uint8Array(buffer);
-        await writeFile(outputPath, contents);
+      const result = await fileStorage.saveFile(data, {
+        defaultName: `recogni-audio.${extension}`,
+        extensions: [extension],
+        filterLabel: "Audio",
+      });
+
+      if (!result) {
         return;
       }
-
-      setErrorMessage("No recording data available to save.");
     } catch (error) {
       setErrorMessage(toErrorMessage(error, "Failed to save recording."));
     }

@@ -63,6 +63,9 @@ export default defineConfig(() => ({
           if (id.includes("@tauri-apps")) {
             return "tauri";
           }
+          if (id.includes("/shared/services/")) {
+            return "services";
+          }
         },
       },
     },

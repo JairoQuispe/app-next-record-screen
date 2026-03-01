@@ -1,4 +1,6 @@
 export { isTauriRuntime } from "./isTauriRuntime";
+export { getRuntime, isCloudflareRuntime, isWebRuntime } from "./getRuntime";
+export type { Runtime } from "./getRuntime";
 export {
   startNativeSystemAudioCapture,
   stopNativeSystemAudioCapture,
