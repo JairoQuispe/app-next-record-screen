@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview",
-    "tauri": "tauri"
+    "preview": "npm run build && wrangler dev",
+    "tauri": "tauri",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@huggingface/transformers": "^3.8.1",
@@ -19,12 +20,14 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.25.6",
     "@tauri-apps/cli": "^2",
     "@types/node": "^25.3.0",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "~5.6.2",
-    "vite": "^6.0.3"
+    "vite": "^6.0.3",
+    "wrangler": "^4.69.0"
   }
 }

@@ -3,6 +3,9 @@ import react from "@vitejs/plugin-react";
 import { fileURLToPath, URL } from "node:url";
 
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
+
 const host = process.env.TAURI_DEV_HOST;
 
 // Strip ONNX Runtime WASM from dist — workers load it from CDN at runtime
@@ -22,7 +25,7 @@ function stripOnnxWasm(): Plugin {
 
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
-  plugins: [react(), stripOnnxWasm()],
+  plugins: [react(), stripOnnxWasm(), cloudflare()],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
