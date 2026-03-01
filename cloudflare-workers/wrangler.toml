@@ -1,0 +1,16 @@
+name = "recogning-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ENVIRONMENT = "production"
+
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "recogning-audio"
+
+[[d1_databases]]
+binding = "D1_DATABASE"
+database_name = "recogning-db"
+database_id = "ddc62e86-cd36-46d7-a997-16cdddc9d907"
